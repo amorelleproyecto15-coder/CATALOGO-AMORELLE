@@ -21,17 +21,18 @@ input,textarea,select{font-family:inherit}
 .gold{background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 img{display:block;max-width:100%}
 
-/* Gate */
+/* Login */
 .gate{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:100;padding:20px}
-.gate .box{width:100%;max-width:340px;text-align:center}
+.gate .box{width:100%;max-width:360px;text-align:center}
 .gate .word{font-family:'Cinzel',serif;font-size:1.9rem;letter-spacing:.06em;margin-bottom:6px}
 .gate p{color:var(--muted);margin-bottom:22px;font-size:.9rem}
-.gate input{width:100%;padding:15px;text-align:center;font-size:1.5rem;letter-spacing:.5em;
+.gate input{width:100%;padding:14px;font-size:1rem;text-align:left;margin-bottom:12px;
   background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--cream);outline:none}
 .gate input:focus{border-color:var(--gold-3)}
-.gate button{margin-top:14px;width:100%;padding:14px;border-radius:12px;background:var(--gold-grad);
+.gate button{width:100%;padding:14px;border-radius:12px;background:var(--gold-grad);
   color:#0a0a0d;font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:.8rem}
-.gate .err{color:var(--danger);font-size:.85rem;margin-top:10px;min-height:20px}
+.gate button:disabled{opacity:.6;cursor:wait}
+.gate .err{color:var(--danger);font-size:.85rem;margin-top:12px;min-height:20px}
 
 header{position:sticky;top:0;z-index:20;background:rgba(10,10,13,.85);backdrop-filter:blur(12px);
   border-bottom:1px solid var(--line-soft);padding:14px 20px;display:flex;align-items:center;gap:16px}
@@ -39,7 +40,8 @@ header .word{font-family:'Cinzel',serif;font-size:1.35rem;letter-spacing:.05em;m
 .tabs{display:flex;gap:6px;background:var(--panel);padding:4px;border-radius:12px}
 .tab{padding:9px 18px;border-radius:9px;color:var(--muted);font-size:.88rem;letter-spacing:.02em}
 .tab.active{background:var(--gold-grad);color:#0a0a0d;font-weight:500}
-header a.view{color:var(--gold-3);text-decoration:none;font-size:.85rem}
+header a.view,header button.out{color:var(--gold-3);text-decoration:none;font-size:.85rem;background:none}
+header button.out:hover{color:var(--danger)}
 
 .wrap{max-width:1100px;margin:0 auto;padding:26px 20px 80px}
 .bar{display:flex;align-items:center;gap:12px;margin-bottom:20px}
@@ -50,7 +52,6 @@ header a.view{color:var(--gold-3);text-decoration:none;font-size:.85rem}
 .btn.ghost:hover{border-color:var(--gold-3)}
 .btn:hover{filter:brightness(1.05)}
 
-/* listas */
 .list{display:grid;gap:12px}
 .row{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line-soft);
   border-radius:14px;padding:12px 14px}
@@ -74,7 +75,6 @@ header a.view{color:var(--gold-3);text-decoration:none;font-size:.85rem}
 .pill.off{background:rgba(224,121,107,.1);color:var(--danger);border:1px solid rgba(224,121,107,.3)}
 .empty{text-align:center;color:var(--muted);padding:50px 20px;border:1px dashed var(--line);border-radius:14px}
 
-/* modal form */
 .ov{position:fixed;inset:0;z-index:60;background:rgba(4,4,6,.72);backdrop-filter:blur(6px);
   display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 16px}
 .ov.open{display:flex}
@@ -94,20 +94,31 @@ header a.view{color:var(--gold-3);text-decoration:none;font-size:.85rem}
 .chk{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
 .chk input{width:18px;height:18px;accent-color:var(--gold-2)}
 
-/* uploader */
-.up{display:flex;gap:14px;align-items:center}
-.up .prev{width:84px;height:84px;border-radius:12px;background:#0d0d11;border:1px solid var(--line);
-  display:grid;place-items:center;overflow:hidden;flex:0 0 auto}
-.up .prev img{width:100%;height:100%;object-fit:contain;padding:6px}
-.up .prev .ph{color:var(--gold-deep);font-family:'Cormorant Garamond';font-size:1.5rem}
-.up .col{flex:1}
-.up input[type=file]{display:none}
-.up .pick{display:inline-block;padding:9px 15px;border-radius:10px;border:1px solid var(--line);
-  background:var(--panel-2);font-size:.85rem}
-.up .pick:hover{border-color:var(--gold-3)}
-.up .urlin{margin-top:8px}
+/* Galería de imágenes (varias por perfume) */
+.imgs{display:flex;gap:10px;flex-wrap:wrap}
+.imgs .it{position:relative;width:78px;height:78px;border-radius:11px;overflow:hidden;
+  border:1px solid var(--line);background:#0d0d11;display:grid;place-items:center}
+.imgs .it img{width:100%;height:100%;object-fit:contain;padding:5px}
+.imgs .it .rm{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;
+  background:rgba(10,10,13,.85);border:1px solid var(--line);display:grid;place-items:center;
+  font-size:.85rem;color:var(--danger);line-height:1}
+.imgs .it .main{position:absolute;bottom:0;left:0;right:0;background:var(--gold-grad);color:#0a0a0d;
+  font-size:.52rem;text-align:center;letter-spacing:.12em;text-transform:uppercase;padding:2px 0}
+.imgs .add{width:78px;height:78px;border-radius:11px;border:1px dashed var(--line);
+  display:grid;place-items:center;color:var(--gold-3);font-size:1.7rem}
+.imgs .add:hover{border-color:var(--gold-3)}
 
-/* selección de notas (con imagen) */
+/* Presentaciones (tamaño + precio dinámicos) */
+.pres-row{display:grid;grid-template-columns:1fr 1fr 42px;gap:10px;margin-bottom:9px;align-items:center}
+.pres-row input{width:100%;padding:11px 12px;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:10px;color:var(--cream);font-size:.92rem;outline:none}
+.pres-row input:focus{border-color:var(--gold-3)}
+.pres-row .del{width:42px;height:42px;border-radius:10px;border:1px solid var(--line);display:grid;place-items:center;color:var(--danger)}
+.pres-row .del:hover{border-color:var(--danger)}
+.addpres{margin-top:2px;padding:9px 15px;border-radius:10px;border:1px dashed var(--line);
+  background:var(--panel-2);font-size:.85rem;color:var(--gold-2)}
+.addpres:hover{border-color:var(--gold-3)}
+
 .notas-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;
   max-height:260px;overflow-y:auto;padding:4px;border:1px solid var(--line-soft);border-radius:12px}
 .np{position:relative;border:1.5px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center;cursor:pointer;transition:.15s}
@@ -120,6 +131,17 @@ header a.view{color:var(--gold-3);text-decoration:none;font-size:.85rem}
 .np .tick{position:absolute;top:5px;right:5px;width:18px;height:18px;border-radius:50%;
   background:var(--gold-grad);color:#0a0a0d;display:none;place-items:center;font-size:.7rem;font-weight:700}
 .np.sel .tick{display:grid}
+
+.up{display:flex;gap:14px;align-items:center}
+.up .prev{width:84px;height:84px;border-radius:12px;background:#0d0d11;border:1px solid var(--line);
+  display:grid;place-items:center;overflow:hidden;flex:0 0 auto}
+.up .prev img{width:100%;height:100%;object-fit:contain;padding:6px}
+.up .prev .ph{color:var(--gold-deep);font-family:'Cormorant Garamond';font-size:1.5rem}
+.up .col{flex:1}
+.up .pick{display:inline-block;padding:9px 15px;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel-2);font-size:.85rem}
+.up .pick:hover{border-color:var(--gold-3)}
+.hidefile{display:none}
 
 .form .save{width:100%;margin-top:8px;padding:15px;border-radius:12px;background:var(--gold-grad);
   color:#0a0a0d;font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-size:.82rem}
@@ -135,14 +157,15 @@ header a.view{color:var(--gold-3);text-decoration:none;font-size:.85rem}
 </head>
 <body>
 
-<!-- Gate PIN -->
+<!-- Login (Supabase Auth) -->
 <div class="gate" id="gate">
   <div class="box">
     <div class="word gold">Aromelle</div>
     <p>Panel de administración</p>
-    <input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
+    <input id="email" type="email" placeholder="Correo" autocomplete="username">
+    <input id="pass" type="password" placeholder="Contraseña" autocomplete="current-password">
     <button id="enter">Entrar</button>
-    <div class="err" id="pinErr"></div>
+    <div class="err" id="loginErr"></div>
   </div>
 </div>
 
@@ -153,33 +176,30 @@ header a.view{color:var(--gold-3);text-decoration:none;font-size:.85rem}
     <button class="tab" data-tab="notas">Notas</button>
   </div>
   <a class="view" href="index.html" target="_blank">Ver tienda ↗</a>
+  <button class="out" id="logout">Salir</button>
 </header>
 
 <div class="wrap" id="wrap" style="display:none">
-  <!-- Perfumes -->
   <section id="tab-perfumes">
     <div class="bar"><h2>Perfumes</h2><button class="btn" id="newPerfume">+ Nuevo perfume</button></div>
     <div class="list" id="perfumesList"></div>
   </section>
-  <!-- Notas -->
   <section id="tab-notas" style="display:none">
     <div class="bar"><h2>Biblioteca de notas</h2><button class="btn" id="newNota">+ Nueva nota</button></div>
     <div class="list" id="notasList"></div>
   </section>
 </div>
 
-<!-- Overlay formularios -->
 <div class="ov" id="ov"><div class="form" id="form"></div></div>
-
 <div class="toast" id="toast"></div>
 
 <script>
 /* ====================================================================
-   ⚙️  CONFIGURACIÓN — usa los MISMOS datos que en index.html
+   CONFIGURACION — usa los MISMOS datos que en index.html
+   La seguridad ahora es por login (Supabase Auth), no por PIN.
    ==================================================================== */
 const SUPABASE_URL  = 'https://pyregonbsatplxgekymb.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5cmVnb25ic2F0cGx4Z2VreW1iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMjU0MTUsImV4cCI6MjEwMTkwMTQxNX0.RcTf2YhayD8PoSxxcTY1F8qSOogvN4fwTzRRXmKhE2g';
-const PIN           = 'AMOR99';        // ← cámbialo por tu PIN secreto
 const BUCKET        = 'aromelle';
 const MONEDA        = 'S/';
 /* ==================================================================== */
@@ -187,19 +207,30 @@ const MONEDA        = 'S/';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 const $ = s => document.querySelector(s);
 const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const fmt = n => n==null?'—':MONEDA+' '+Number(n).toFixed(2);
+const fmt = n => n==null||n===''?'—':MONEDA+' '+Number(n).toFixed(2);
 let PERFUMES=[], NOTAS=[], REL=[];
 
-/* ---------- Gate ---------- */
-$('#enter').onclick = tryEnter;
-$('#pin').onkeydown = e => { if(e.key==='Enter') tryEnter(); };
-$('#pin').focus();
-function tryEnter(){
-  if($('#pin').value === PIN){
-    $('#gate').style.display='none'; $('#app').style.display='flex'; $('#wrap').style.display='block';
-    boot();
-  } else { $('#pinErr').textContent='PIN incorrecto'; $('#pin').value=''; $('#pin').focus(); }
+/* ---------- Auth ---------- */
+async function checkSession(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session){ showApp(); } else { $('#gate').style.display='grid'; $('#email').focus(); }
 }
+function showApp(){
+  $('#gate').style.display='none'; $('#app').style.display='flex'; $('#wrap').style.display='block';
+  boot();
+}
+$('#enter').onclick = login;
+$('#pass').onkeydown = e => { if(e.key==='Enter') login(); };
+async function login(){
+  const email=$('#email').value.trim(), password=$('#pass').value;
+  if(!email||!password){ $('#loginErr').textContent='Escribe correo y contraseña'; return; }
+  const b=$('#enter'); b.disabled=true; b.textContent='Entrando…'; $('#loginErr').textContent='';
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  b.disabled=false; b.textContent='Entrar';
+  if(error){ $('#loginErr').textContent = error.message.includes('Invalid')?'Correo o contraseña incorrectos':error.message; return; }
+  showApp();
+}
+$('#logout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
 
 /* ---------- Tabs ---------- */
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
@@ -219,7 +250,7 @@ async function loadPerfumes(){
   renderPerfumes();
 }
 
-/* ---------- Subir imagen a Storage ---------- */
+/* ---------- Storage ---------- */
 async function uploadImg(file, folder){
   const ext = (file.name.split('.').pop()||'jpg').toLowerCase();
   const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
@@ -232,7 +263,7 @@ async function uploadImg(file, folder){
 function renderNotas(){
   $('#notasList').innerHTML = NOTAS.length ? NOTAS.map(n => `
     <div class="row">
-      <div class="th">${n.imagen_url?`<img src="${n.imagen_url}" alt="">`:'<span style="color:var(--gold-deep);font-family:Cormorant Garamond;font-size:1.4rem">'+esc((n.nombre||'?')[0])+'</span>'}</div>
+      <div class="th">${n.imagen_url?`<img src="${esc(n.imagen_url)}" alt="">`:'<span style="color:var(--gold-deep);font-family:Cormorant Garamond;font-size:1.4rem">'+esc((n.nombre||'?')[0])+'</span>'}</div>
       <div class="meta"><div class="n">${esc(n.nombre)}</div><div class="s">${n.imagen_url?'Con imagen':'Sin imagen'}</div></div>
       <div class="acts">
         <button class="icon" data-edit-nota="${n.id}" title="Editar"><svg viewBox="0 0 24 24"><path d="M4 20h4L18 10l-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg></button>
@@ -252,10 +283,10 @@ function notaForm(id){
     <div class="f"><label>Nombre</label><input id="nNombre" value="${esc(n.nombre)}" placeholder="Ej. Bergamota"></div>
     <div class="f"><label>Imagen</label>
       <div class="up">
-        <div class="prev" id="nPrev">${imgUrl?`<img src="${imgUrl}">`:'<span class="ph">🖼️</span>'}</div>
+        <div class="prev" id="nPrev">${imgUrl?`<img src="${esc(imgUrl)}">`:'<span class="ph">🖼️</span>'}</div>
         <div class="col">
-          <label class="pick">Subir imagen<input type="file" id="nFile" accept="image/*"></label>
-          <input class="urlin f" id="nUrl" value="${esc(imgUrl)}" placeholder="…o pega una URL" style="width:100%;padding:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--cream);margin-top:8px">
+          <label class="pick">Subir imagen<input type="file" id="nFile" accept="image/*" class="hidefile"></label>
+          <input id="nUrl" value="${esc(imgUrl)}" placeholder="…o pega una URL" style="width:100%;padding:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--cream);margin-top:8px">
           <div class="hint">Sube una foto cuadrada de la nota (lavanda, vainilla, etc.).</div>
         </div>
       </div>
@@ -264,7 +295,7 @@ function notaForm(id){
   openOv();
   $('#fx').onclick = closeOv;
   $('#nFile').onchange = e => { file=e.target.files[0]; if(file){ const r=new FileReader(); r.onload=()=>$('#nPrev').innerHTML=`<img src="${r.result}">`; r.readAsDataURL(file);} };
-  $('#nUrl').oninput = e => { imgUrl=e.target.value.trim(); if(imgUrl&&!file)$('#nPrev').innerHTML=`<img src="${imgUrl}">`; };
+  $('#nUrl').oninput = e => { imgUrl=e.target.value.trim(); if(imgUrl&&!file)$('#nPrev').innerHTML=`<img src="${esc(imgUrl)}">`; };
   $('#nSave').onclick = async () => {
     const nombre = $('#nNombre').value.trim(); if(!nombre) return toast('Escribe el nombre',true);
     const btn=$('#nSave'); btn.disabled=true; btn.textContent='Guardando…';
@@ -287,15 +318,19 @@ async function delNota(id){
 
 /* =========================  PERFUMES  ========================= */
 function notasDe(pid){ return REL.filter(r=>r.perfume_id===pid).map(r=>NOTAS.find(n=>n.id===r.nota_id)).filter(Boolean); }
+function imgsOf(p){ const a=Array.isArray(p.imagenes)?p.imagenes.filter(Boolean):[]; return a.length?a:(p.imagen_url?[p.imagen_url]:[]); }
+function presOf(p){ return Array.isArray(p.presentaciones)?p.presentaciones.filter(x=>x&&x.ml):[]; }
+
 function renderPerfumes(){
   $('#perfumesList').innerHTML = PERFUMES.length ? PERFUMES.map(p => {
     const ns = notasDe(p.id);
-    const precios=[p.precio_3ml,p.precio_5ml,p.precio_10ml].filter(v=>v!=null);
+    const precios = presOf(p).map(x=>Number(x.precio)).filter(v=>!isNaN(v));
+    const main = imgsOf(p)[0];
     return `<div class="row">
-      <div class="th contain">${p.imagen_url?`<img src="${p.imagen_url}">`:'<span style="color:var(--gold-deep);font-family:Cormorant Garamond;font-size:1.3rem">'+esc((p.marca||'A')[0])+'</span>'}</div>
+      <div class="th contain">${main?`<img src="${esc(main)}">`:'<span style="color:var(--gold-deep);font-family:Cormorant Garamond;font-size:1.3rem">'+esc((p.marca||'A')[0])+'</span>'}</div>
       <div class="meta">
         <div class="n">${esc(p.nombre)}</div>
-        <div class="s">${esc(p.marca||'')} · ${esc(p.genero||'')} · ${precios.length?'desde '+fmt(Math.min(...precios)):'sin precio'}</div>
+        <div class="s">${esc(p.marca||'')} · ${esc(p.genero||'')} · ${precios.length?'desde '+fmt(Math.min(...precios)):'sin precio'} · ${imgsOf(p).length} img</div>
         <div class="tagline">
           <span class="pill ${p.activo?'on':'off'}">${p.activo?'Activo':'Oculto'}</span>
           ${p.destacado?'<span class="tg">★ Destacado</span>':''}
@@ -308,7 +343,7 @@ function renderPerfumes(){
         <button class="icon del" data-del-p="${p.id}" title="Borrar"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M6 7l1 13h10l1-13"/></svg></button>
       </div>
     </div>`;
-  }).join('') : '<div class="empty">Aún no hay perfumes. Empieza creando notas y luego tu primer perfume.</div>';
+  }).join('') : '<div class="empty">Aún no hay perfumes. Crea primero las notas y luego tu primer perfume.</div>';
   document.querySelectorAll('[data-edit-p]').forEach(b=>b.onclick=()=>perfumeForm(b.dataset.editP));
   document.querySelectorAll('[data-del-p]').forEach(b=>b.onclick=()=>delPerfume(b.dataset.delP));
 }
@@ -317,27 +352,26 @@ $('#newPerfume').onclick = () => perfumeForm();
 function perfumeForm(id){
   const p = id ? PERFUMES.find(x=>x.id===id) : {genero:'Unisex',activo:true,orden:0};
   let selNotas = id ? new Set(notasDe(id).map(n=>n.id)) : new Set();
-  let imgUrl = p.imagen_url||'', file=null;
+  let imgs = imgsOf(p).slice();                       // galería de imágenes
+  let pres = presOf(p).map(x=>({ml:x.ml, precio:x.precio})); // tamaños/precios
+  if(!pres.length) pres = [{ml:'',precio:''}];
 
   $('#form').innerHTML = `
     <h3>${id?'Editar':'Nuevo'} perfume <button class="x" id="fx">✕</button></h3>
     <div class="grid2">
       <div class="f"><label>Marca / Diseñador</label><input id="pMarca" value="${esc(p.marca||'')}" placeholder="Ej. Valentino"></div>
       <div class="f"><label>Género</label>
-        <select id="pGenero">
-          ${['Hombre','Mujer','Unisex'].map(g=>`<option ${p.genero===g?'selected':''}>${g}</option>`).join('')}
-        </select></div>
+        <select id="pGenero">${['Hombre','Mujer','Unisex'].map(g=>`<option ${p.genero===g?'selected':''}>${g}</option>`).join('')}</select></div>
     </div>
     <div class="f"><label>Nombre del perfume</label><input id="pNombre" value="${esc(p.nombre||'')}" placeholder="Ej. Uomo Born In Roma Extradose"></div>
     <div class="f"><label>Descripción (opcional)</label><textarea id="pDesc" placeholder="Amaderado aromático intenso…">${esc(p.descripcion||'')}</textarea></div>
 
-    <div class="f"><label>Foto del frasco</label>
-      <div class="up">
-        <div class="prev" id="pPrev">${imgUrl?`<img src="${imgUrl}">`:'<span class="ph">🧴</span>'}</div>
-        <div class="col">
-          <label class="pick">Subir imagen<input type="file" id="pFile" accept="image/*"></label>
-          <input id="pUrl" value="${esc(imgUrl)}" placeholder="…o pega una URL" style="width:100%;padding:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--cream);margin-top:8px">
-        </div>
+    <div class="f"><label>Imágenes del perfume (la 1.ª es la principal)</label>
+      <div class="imgs" id="imgs"></div>
+      <input type="file" id="pFiles" accept="image/*" multiple class="hidefile">
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input id="pUrl" placeholder="…o pega una URL y añade" style="flex:1;padding:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--cream)">
+        <button class="btn ghost" id="addUrl" type="button">Añadir URL</button>
       </div>
     </div>
 
@@ -352,16 +386,18 @@ function perfumeForm(id){
         ${NOTAS.length?NOTAS.map(n=>`
           <div class="np ${selNotas.has(n.id)?'sel':''}" data-nota="${n.id}">
             <div class="tick">✓</div>
-            <div class="ph ${n.imagen_url?'':'empty'}">${n.imagen_url?`<img src="${n.imagen_url}">`:esc((n.nombre||'?')[0])}</div>
+            <div class="ph ${n.imagen_url?'':'empty'}">${n.imagen_url?`<img src="${esc(n.imagen_url)}">`:esc((n.nombre||'?')[0])}</div>
             <span>${esc(n.nombre)}</span>
           </div>`).join(''):'<div class="hint" style="padding:14px">No hay notas todavía. Créalas en la pestaña «Notas».</div>'}
       </div>
     </div>
 
+    <div class="f"><label>Tamaños y precios (2ml, 5ml, 10ml… los que quieras)</label>
+      <div id="presList"></div>
+      <button class="addpres" id="addPres" type="button">+ Añadir tamaño</button>
+    </div>
+
     <div class="grid2">
-      <div class="f"><label>Precio 3ml</label><input id="p3" type="number" step="0.01" value="${p.precio_3ml??''}" placeholder="29.90"></div>
-      <div class="f"><label>Precio 5ml</label><input id="p5" type="number" step="0.01" value="${p.precio_5ml??''}" placeholder="39.90"></div>
-      <div class="f"><label>Precio 10ml</label><input id="p10" type="number" step="0.01" value="${p.precio_10ml??''}" placeholder="69.90"></div>
       <div class="f"><label>Orden</label><input id="pOrden" type="number" value="${p.orden??0}"></div>
       <div class="f"><label>Duración</label><input id="pLong" value="${esc(p.longevidad||'')}" placeholder="7 h"></div>
       <div class="f"><label>Estela</label><input id="pEst" value="${esc(p.estela||'')}" placeholder="Fuerte"></div>
@@ -375,34 +411,72 @@ function perfumeForm(id){
     <button class="save" id="pSave">Guardar perfume</button>`;
   openOv();
   $('#fx').onclick = closeOv;
-  $('#pFile').onchange = e => { file=e.target.files[0]; if(file){const r=new FileReader();r.onload=()=>$('#pPrev').innerHTML=`<img src="${r.result}">`;r.readAsDataURL(file);} };
-  $('#pUrl').oninput = e => { imgUrl=e.target.value.trim(); if(imgUrl&&!file)$('#pPrev').innerHTML=`<img src="${imgUrl}">`; };
+
+  /* --- galería de imágenes --- */
+  function renderImgs(){
+    $('#imgs').innerHTML = imgs.map((u,i)=>`
+      <div class="it">
+        <img src="${esc(u)}" alt="">
+        ${i===0?'<div class="main">Principal</div>':''}
+        <button class="rm" data-rmimg="${i}" type="button">✕</button>
+      </div>`).join('') +
+      `<button class="add" id="addImg" type="button" title="Subir imágenes">＋</button>`;
+    $('#addImg').onclick = () => $('#pFiles').click();
+    document.querySelectorAll('[data-rmimg]').forEach(b=>b.onclick=()=>{ imgs.splice(+b.dataset.rmimg,1); renderImgs(); });
+  }
+  renderImgs();
+  $('#pFiles').onchange = async e => {
+    const files=[...e.target.files]; if(!files.length)return;
+    toast('Subiendo imágenes…');
+    try{ for(const f of files){ const u=await uploadImg(f,'perfumes'); imgs.push(u); renderImgs(); } toast('Imágenes subidas'); }
+    catch(err){ toast(err.message,true); }
+    e.target.value='';
+  };
+  $('#addUrl').onclick = () => { const u=$('#pUrl').value.trim(); if(u){ imgs.push(u); $('#pUrl').value=''; renderImgs(); } };
+
+  /* --- presentaciones dinámicas --- */
+  function renderPres(){
+    $('#presList').innerHTML = pres.map((x,i)=>`
+      <div class="pres-row">
+        <input data-ml="${i}" value="${esc(x.ml||'')}" placeholder="Tamaño (ej. 5ml)">
+        <input data-precio="${i}" type="number" step="0.01" value="${x.precio??''}" placeholder="Precio (ej. 39.90)">
+        <button class="del" data-delpres="${i}" type="button">✕</button>
+      </div>`).join('');
+    document.querySelectorAll('[data-ml]').forEach(inp=>inp.oninput=e=>pres[+inp.dataset.ml].ml=e.target.value);
+    document.querySelectorAll('[data-precio]').forEach(inp=>inp.oninput=e=>pres[+inp.dataset.precio].precio=e.target.value);
+    document.querySelectorAll('[data-delpres]').forEach(b=>b.onclick=()=>{ pres.splice(+b.dataset.delpres,1); if(!pres.length)pres=[{ml:'',precio:''}]; renderPres(); });
+  }
+  renderPres();
+  $('#addPres').onclick = () => { pres.push({ml:'',precio:''}); renderPres(); };
+
+  /* --- notas --- */
   document.querySelectorAll('#notasPick .np').forEach(el => el.onclick = () => {
     const nid=el.dataset.nota; el.classList.toggle('sel');
     el.classList.contains('sel')?selNotas.add(nid):selNotas.delete(nid);
   });
 
+  /* --- guardar --- */
   $('#pSave').onclick = async () => {
     const nombre=$('#pNombre').value.trim(), marca=$('#pMarca').value.trim();
     if(!marca||!nombre) return toast('Marca y nombre son obligatorios',true);
+    const presLimpio = pres
+      .filter(x=>String(x.ml).trim()!=='')
+      .map(x=>({ml:String(x.ml).trim(), precio:x.precio===''||x.precio==null?null:Number(x.precio)}));
     const btn=$('#pSave'); btn.disabled=true; btn.textContent='Guardando…';
     try{
-      let url=$('#pUrl').value.trim();
-      if(file) url = await uploadImg(file,'perfumes');
-      const num = v => v===''?null:Number(v);
+      const num = v => v===''||v==null?null:Number(v);
       const payload = {
         marca, nombre, genero:$('#pGenero').value, descripcion:$('#pDesc').value.trim()||null,
-        imagen_url:url||null,
+        imagenes: imgs, imagen_url: imgs[0]||null,
+        presentaciones: presLimpio,
         notas_salida:$('#pSalida').value.trim()||null, notas_corazon:$('#pCorazon').value.trim()||null,
         notas_fondo:$('#pFondo').value.trim()||null,
-        precio_3ml:num($('#p3').value), precio_5ml:num($('#p5').value), precio_10ml:num($('#p10').value),
         longevidad:$('#pLong').value.trim()||null, estela:$('#pEst').value.trim()||null,
         destacado:$('#pDest').checked, activo:$('#pActivo').checked, orden:num($('#pOrden').value)||0
       };
       let pid = id;
       if(id){ const {error}=await sb.from('perfumes').update(payload).eq('id',id); if(error)throw error; }
       else{ const {data,error}=await sb.from('perfumes').insert(payload).select('id').single(); if(error)throw error; pid=data.id; }
-      // sincronizar notas
       await sb.from('perfume_notas').delete().eq('perfume_id',pid);
       if(selNotas.size){
         const rows=[...selNotas].map(nid=>({perfume_id:pid,nota_id:nid}));
@@ -423,6 +497,8 @@ function openOv(){ $('#ov').classList.add('open'); document.body.style.overflow=
 function closeOv(){ $('#ov').classList.remove('open'); document.body.style.overflow=''; }
 $('#ov').onclick = e => { if(e.target.id==='ov') closeOv(); };
 let tt; function toast(m,bad){ const t=$('#toast'); t.textContent=m; t.className='toast show'+(bad?' bad':''); clearTimeout(tt); tt=setTimeout(()=>t.className='toast',2600); }
+
+checkSession();
 </script>
 </body>
 </html>

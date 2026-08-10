@@ -145,6 +145,13 @@ header{
   padding:34px 24px; display:grid; place-items:center}
 .sheet .hd img{max-height:300px; object-fit:contain;
   filter:drop-shadow(0 22px 30px rgba(0,0,0,.6))}
+.gallery{display:flex; gap:9px; justify-content:center; flex-wrap:wrap;
+  padding:14px 20px 4px; background:#0e0e12}
+.gthumb{width:56px; height:56px; border-radius:10px; overflow:hidden;
+  border:1.5px solid var(--line); background:#14141b; padding:4px; transition:.15s}
+.gthumb:hover{border-color:var(--gold-deep)}
+.gthumb.active{border-color:var(--gold-2)}
+.gthumb img{width:100%; height:100%; object-fit:contain}
 .close{position:absolute; top:14px; right:14px; width:38px; height:38px; border-radius:50%;
   background:rgba(10,10,13,.6); border:1px solid var(--line); display:grid; place-items:center}
 .close:hover{border-color:var(--gold-3)}
@@ -348,7 +355,9 @@ const TIENDA        = 'Aromelle';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 const $  = s => document.querySelector(s);
 const fmt = n => MONEDA + ' ' + Number(n).toFixed(2);
-const SIZES = [['precio_3ml','3ml'],['precio_5ml','5ml'],['precio_10ml','10ml']];
+function imgsOf(p){ const a = Array.isArray(p.imagenes)?p.imagenes.filter(Boolean):[]; return a.length?a:(p.imagen_url?[p.imagen_url]:[]); }
+function presOf(p){ return Array.isArray(p.presentaciones)?p.presentaciones.filter(x=>x&&x.ml):[]; }
+function preciosOf(p){ return presOf(p).map(x=>Number(x.precio)).filter(v=>!isNaN(v)); }
 
 let PERFUMES = [], NOTAS_BY_PERFUME = {}, activeFilter = 'Todos', query = '';
 let CART = JSON.parse(localStorage.getItem('aromelle_cart') || '[]');
@@ -388,10 +397,7 @@ function renderFilters(){
 }
 
 /* ---------- Render grid ---------- */
-function precioDesde(p){
-  const vals = SIZES.map(([k]) => p[k]).filter(v => v != null);
-  return vals.length ? Math.min(...vals) : null;
-}
+function precioDesde(p){ const v = preciosOf(p); return v.length ? Math.min(...v) : null; }
 function render(){
   let list = PERFUMES.filter(p =>
     (activeFilter==='Todos' || p.marca===activeFilter) &&
@@ -402,10 +408,11 @@ function render(){
 
   $('#grid').innerHTML = list.map(p => {
     const desde = precioDesde(p);
+    const main = imgsOf(p)[0];
     return `<button class="card" data-id="${p.id}">
       ${p.destacado ? '<span class="badge-dest">Destacado</span>' : ''}
-      <div class="imgwrap">${p.imagen_url
-        ? `<img src="${p.imagen_url}" alt="${esc(p.nombre)}" loading="lazy">`
+      <div class="imgwrap">${main
+        ? `<img src="${esc(main)}" alt="${esc(p.nombre)}" loading="lazy">`
         : `<span style="font-family:'Cormorant Garamond';font-size:2.4rem;color:var(--gold-deep)">${esc((p.marca||'A')[0])}</span>`}</div>
       <div class="body">
         <span class="marca">${esc(p.marca||'')}</span>
@@ -427,15 +434,21 @@ function openProduct(id){
   const p = PERFUMES.find(x => x.id === id); if(!p) return;
   curProduct = p; selSize = null;
   const notas = NOTAS_BY_PERFUME[id] || [];
+  const imgs = imgsOf(p);
+  const mainImg = imgs[0];
+  const pres = presOf(p);
   const piramide = [['Salida',p.notas_salida],['Corazón',p.notas_corazon],['Fondo',p.notas_fondo]]
     .filter(([,v]) => v);
 
   $('#sheet').innerHTML = `
     <div class="hd">
       <button class="close" id="closeSheet" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button>
-      ${p.imagen_url ? `<img src="${p.imagen_url}" alt="${esc(p.nombre)}">`
+      ${mainImg ? `<img id="mainImg" src="${esc(mainImg)}" alt="${esc(p.nombre)}">`
         : `<div style="font-family:'Cormorant Garamond';font-size:4rem;color:var(--gold-deep)">${esc(p.marca||'A')}</div>`}
     </div>
+    ${imgs.length>1 ? `<div class="gallery">${imgs.map((u,i)=>
+        `<button class="gthumb ${i===0?'active':''}" data-img="${esc(u)}"><img src="${esc(u)}" alt=""></button>`
+      ).join('')}</div>` : ''}
     <div class="bd">
       <div class="marca">${esc(p.marca||'')}</div>
       <h2>${esc(p.nombre)}</h2>
@@ -467,10 +480,10 @@ function openProduct(id){
 
       <div class="section-t">Seleccionar tamaño</div>
       <div class="tallas" id="tallas">
-        ${SIZES.filter(([k]) => p[k]!=null).map(([k,label]) =>
-          `<button class="talla" data-size="${label}" data-price="${p[k]}">
-            <div class="ml">${label}</div><div class="pr">${fmt(p[k])}</div>
-          </button>`).join('') || '<div class="v" style="color:var(--muted)">Precios a consultar por WhatsApp.</div>'}
+        ${pres.length ? pres.map(x =>
+          `<button class="talla" data-size="${esc(x.ml)}" data-price="${Number(x.precio)}">
+            <div class="ml">${esc(x.ml)}</div><div class="pr">${fmt(x.precio)}</div>
+          </button>`).join('') : '<div class="v" style="color:var(--muted)">Precios a consultar por WhatsApp.</div>'}
       </div>
       <div class="note-30">Para presentaciones de 30ml, consúltanos al <b>+${WHATSAPP}</b></div>
 
@@ -483,6 +496,11 @@ function openProduct(id){
     selSize = { size:t.dataset.size, price:+t.dataset.price };
     const b = $('#addBtn'); b.disabled = false;
     b.textContent = `Añadir · ${t.dataset.size} · ${fmt(t.dataset.price)}`;
+  });
+  document.querySelectorAll('.gthumb').forEach(t => t.onclick = () => {
+    const m = $('#mainImg'); if(m) m.src = t.dataset.img;
+    document.querySelectorAll('.gthumb').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
   });
   $('#addBtn').onclick = addToCart;
   $('#closeSheet').onclick = closeProduct;
@@ -498,7 +516,7 @@ function addToCart(){
   const found = CART.find(i => i.key === key);
   if(found) found.qty++;
   else CART.push({ key, id:curProduct.id, nombre:curProduct.nombre, marca:curProduct.marca,
-    img:curProduct.imagen_url, size:selSize.size, price:selSize.price, qty:1 });
+    img:imgsOf(curProduct)[0], size:selSize.size, price:selSize.price, qty:1 });
   saveCart(); toast(`Añadido: ${curProduct.nombre} (${selSize.size})`);
   closeProduct(); openCart();
 }
