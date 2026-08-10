@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aromelle · Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Cormorant+Garamond:wght@600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0a0a0d; --panel:#14141b; --panel-2:#1b1b23; --line:#2a2a33; --line-soft:#1f1f27;
+  --gold-2:#d9b45a; --gold-3:#b8893a; --gold-deep:#8a6522;
+  --gold-grad:linear-gradient(135deg,#f4e6b8,#e6c76b 30%,#c99a3e 60%,#f4e6b8);
+  --cream:#f2ecdf; --muted:#8f8a7a; --muted-2:#6a6659; --danger:#e0796b; --ok:#7bd88f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1000px 500px at 50% -10%,#16130c,transparent 60%),var(--bg);
+  color:var(--cream); font-family:'Jost',sans-serif; min-height:100vh}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea,select{font-family:inherit}
+.gold{background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+img{display:block;max-width:100%}
+
+/* Gate */
+.gate{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:100;padding:20px}
+.gate .box{width:100%;max-width:340px;text-align:center}
+.gate .word{font-family:'Cinzel',serif;font-size:1.9rem;letter-spacing:.06em;margin-bottom:6px}
+.gate p{color:var(--muted);margin-bottom:22px;font-size:.9rem}
+.gate input{width:100%;padding:15px;text-align:center;font-size:1.5rem;letter-spacing:.5em;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--cream);outline:none}
+.gate input:focus{border-color:var(--gold-3)}
+.gate button{margin-top:14px;width:100%;padding:14px;border-radius:12px;background:var(--gold-grad);
+  color:#0a0a0d;font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:.8rem}
+.gate .err{color:var(--danger);font-size:.85rem;margin-top:10px;min-height:20px}
+
+header{position:sticky;top:0;z-index:20;background:rgba(10,10,13,.85);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line-soft);padding:14px 20px;display:flex;align-items:center;gap:16px}
+header .word{font-family:'Cinzel',serif;font-size:1.35rem;letter-spacing:.05em;margin-right:auto}
+.tabs{display:flex;gap:6px;background:var(--panel);padding:4px;border-radius:12px}
+.tab{padding:9px 18px;border-radius:9px;color:var(--muted);font-size:.88rem;letter-spacing:.02em}
+.tab.active{background:var(--gold-grad);color:#0a0a0d;font-weight:500}
+header a.view{color:var(--gold-3);text-decoration:none;font-size:.85rem}
+
+.wrap{max-width:1100px;margin:0 auto;padding:26px 20px 80px}
+.bar{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.bar h2{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.9rem;margin-right:auto}
+.btn{padding:11px 20px;border-radius:11px;background:var(--gold-grad);color:#0a0a0d;
+  font-weight:600;letter-spacing:.04em;font-size:.9rem}
+.btn.ghost{background:var(--panel);color:var(--cream);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--gold-3)}
+.btn:hover{filter:brightness(1.05)}
+
+/* listas */
+.list{display:grid;gap:12px}
+.row{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line-soft);
+  border-radius:14px;padding:12px 14px}
+.row .th{width:56px;height:56px;border-radius:11px;background:#0d0d11;border:1px solid var(--line-soft);
+  display:grid;place-items:center;flex:0 0 auto;overflow:hidden}
+.row .th img{max-width:100%;max-height:100%;object-fit:cover;width:100%;height:100%}
+.row .th.contain img{object-fit:contain;padding:6px}
+.row .meta{flex:1;min-width:0}
+.row .meta .n{font-family:'Cormorant Garamond',serif;font-size:1.2rem;line-height:1.15}
+.row .meta .s{font-size:.8rem;color:var(--muted);margin-top:2px}
+.tagline{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.tg{font-size:.68rem;padding:3px 8px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line-soft);color:var(--gold-2)}
+.row .acts{display:flex;gap:8px;flex:0 0 auto}
+.icon{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);display:grid;place-items:center}
+.icon:hover{border-color:var(--gold-3)}
+.icon.del:hover{border-color:var(--danger)}
+.icon svg{width:17px;height:17px;stroke:var(--cream);fill:none;stroke-width:1.8}
+.icon.del svg{stroke:var(--danger)}
+.pill{font-size:.66rem;padding:3px 8px;border-radius:999px;letter-spacing:.08em;text-transform:uppercase}
+.pill.on{background:rgba(123,216,143,.12);color:var(--ok);border:1px solid rgba(123,216,143,.3)}
+.pill.off{background:rgba(224,121,107,.1);color:var(--danger);border:1px solid rgba(224,121,107,.3)}
+.empty{text-align:center;color:var(--muted);padding:50px 20px;border:1px dashed var(--line);border-radius:14px}
+
+/* modal form */
+.ov{position:fixed;inset:0;z-index:60;background:rgba(4,4,6,.72);backdrop-filter:blur(6px);
+  display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 16px}
+.ov.open{display:flex}
+.form{width:100%;max-width:640px;background:linear-gradient(180deg,var(--panel),#0e0e12);
+  border:1px solid var(--line);border-radius:20px;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.form h3{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:600;margin-bottom:20px;
+  display:flex;align-items:center;justify-content:space-between}
+.form h3 .x{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:1.1rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.f{margin-bottom:14px}
+.f label{display:block;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.f input,.f textarea,.f select{width:100%;padding:12px 13px;background:var(--panel-2);
+  border:1px solid var(--line);border-radius:10px;color:var(--cream);font-size:.95rem;outline:none}
+.f input:focus,.f textarea:focus,.f select:focus{border-color:var(--gold-3)}
+.f textarea{resize:vertical;min-height:64px}
+.f .hint{font-size:.72rem;color:var(--muted-2);margin-top:5px}
+.chk{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
+.chk input{width:18px;height:18px;accent-color:var(--gold-2)}
+
+/* uploader */
+.up{display:flex;gap:14px;align-items:center}
+.up .prev{width:84px;height:84px;border-radius:12px;background:#0d0d11;border:1px solid var(--line);
+  display:grid;place-items:center;overflow:hidden;flex:0 0 auto}
+.up .prev img{width:100%;height:100%;object-fit:contain;padding:6px}
+.up .prev .ph{color:var(--gold-deep);font-family:'Cormorant Garamond';font-size:1.5rem}
+.up .col{flex:1}
+.up input[type=file]{display:none}
+.up .pick{display:inline-block;padding:9px 15px;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel-2);font-size:.85rem}
+.up .pick:hover{border-color:var(--gold-3)}
+.up .urlin{margin-top:8px}
+
+/* selección de notas (con imagen) */
+.notas-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;
+  max-height:260px;overflow-y:auto;padding:4px;border:1px solid var(--line-soft);border-radius:12px}
+.np{position:relative;border:1.5px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center;cursor:pointer;transition:.15s}
+.np:hover{border-color:var(--gold-deep)}
+.np.sel{border-color:var(--gold-2);background:rgba(217,180,90,.08)}
+.np .ph{width:52px;height:52px;margin:0 auto;border-radius:9px;overflow:hidden;background:var(--panel-2);display:grid;place-items:center}
+.np .ph img{width:100%;height:100%;object-fit:cover}
+.np .ph.empty{color:var(--gold-deep);font-family:'Cormorant Garamond';font-size:1.3rem}
+.np span{display:block;font-size:.7rem;margin-top:5px;color:var(--cream);line-height:1.1}
+.np .tick{position:absolute;top:5px;right:5px;width:18px;height:18px;border-radius:50%;
+  background:var(--gold-grad);color:#0a0a0d;display:none;place-items:center;font-size:.7rem;font-weight:700}
+.np.sel .tick{display:grid}
+
+.form .save{width:100%;margin-top:8px;padding:15px;border-radius:12px;background:var(--gold-grad);
+  color:#0a0a0d;font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-size:.82rem}
+.form .save:disabled{opacity:.6;cursor:wait}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--panel);border:1px solid var(--gold-deep);padding:13px 20px;border-radius:12px;
+  z-index:90;opacity:0;transition:.3s;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.bad{border-color:var(--danger);color:var(--danger)}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}.bar h2{font-size:1.5rem}.tab{padding:9px 12px;font-size:.8rem}}
+</style>
+</head>
+<body>
+
+<!-- Gate PIN -->
+<div class="gate" id="gate">
+  <div class="box">
+    <div class="word gold">Aromelle</div>
+    <p>Panel de administración</p>
+    <input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
+    <button id="enter">Entrar</button>
+    <div class="err" id="pinErr"></div>
+  </div>
+</div>
+
+<header style="display:none" id="app">
+  <span class="word gold">Aromelle</span>
+  <div class="tabs">
+    <button class="tab active" data-tab="perfumes">Perfumes</button>
+    <button class="tab" data-tab="notas">Notas</button>
+  </div>
+  <a class="view" href="index.html" target="_blank">Ver tienda ↗</a>
+</header>
+
+<div class="wrap" id="wrap" style="display:none">
+  <!-- Perfumes -->
+  <section id="tab-perfumes">
+    <div class="bar"><h2>Perfumes</h2><button class="btn" id="newPerfume">+ Nuevo perfume</button></div>
+    <div class="list" id="perfumesList"></div>
+  </section>
+  <!-- Notas -->
+  <section id="tab-notas" style="display:none">
+    <div class="bar"><h2>Biblioteca de notas</h2><button class="btn" id="newNota">+ Nueva nota</button></div>
+    <div class="list" id="notasList"></div>
+  </section>
+</div>
+
+<!-- Overlay formularios -->
+<div class="ov" id="ov"><div class="form" id="form"></div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ====================================================================
+   ⚙️  CONFIGURACIÓN — usa los MISMOS datos que en index.html
+   ==================================================================== */
+const SUPABASE_URL  = 'https://pyregonbsatplxgekymb.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5cmVnb25ic2F0cGx4Z2VreW1iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMjU0MTUsImV4cCI6MjEwMTkwMTQxNX0.RcTf2YhayD8PoSxxcTY1F8qSOogvN4fwTzRRXmKhE2g';
+const PIN           = 'AMORELLE99';        // ← cámbialo por tu PIN secreto
+const BUCKET        = 'aromelle';
+const MONEDA        = 'S/';
+/* ==================================================================== */
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const $ = s => document.querySelector(s);
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = n => n==null?'—':MONEDA+' '+Number(n).toFixed(2);
+let PERFUMES=[], NOTAS=[], REL=[];
+
+/* ---------- Gate ---------- */
+$('#enter').onclick = tryEnter;
+$('#pin').onkeydown = e => { if(e.key==='Enter') tryEnter(); };
+$('#pin').focus();
+function tryEnter(){
+  if($('#pin').value === PIN){
+    $('#gate').style.display='none'; $('#app').style.display='flex'; $('#wrap').style.display='block';
+    boot();
+  } else { $('#pinErr').textContent='PIN incorrecto'; $('#pin').value=''; $('#pin').focus(); }
+}
+
+/* ---------- Tabs ---------- */
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+  $('#tab-perfumes').style.display = t.dataset.tab==='perfumes'?'block':'none';
+  $('#tab-notas').style.display    = t.dataset.tab==='notas'?'block':'none';
+});
+
+/* ---------- Carga ---------- */
+async function boot(){ await Promise.all([loadNotas(), loadPerfumes()]); }
+async function loadNotas(){
+  const {data} = await sb.from('notas').select('*').order('nombre'); NOTAS=data||[]; renderNotas();
+}
+async function loadPerfumes(){
+  const {data} = await sb.from('perfumes').select('*').order('orden').order('created_at'); PERFUMES=data||[];
+  const {data:r} = await sb.from('perfume_notas').select('perfume_id,nota_id'); REL=r||[];
+  renderPerfumes();
+}
+
+/* ---------- Subir imagen a Storage ---------- */
+async function uploadImg(file, folder){
+  const ext = (file.name.split('.').pop()||'jpg').toLowerCase();
+  const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const {error} = await sb.storage.from(BUCKET).upload(path, file, {upsert:true});
+  if(error) throw error;
+  return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+}
+
+/* =========================  NOTAS  ========================= */
+function renderNotas(){
+  $('#notasList').innerHTML = NOTAS.length ? NOTAS.map(n => `
+    <div class="row">
+      <div class="th">${n.imagen_url?`<img src="${n.imagen_url}" alt="">`:'<span style="color:var(--gold-deep);font-family:Cormorant Garamond;font-size:1.4rem">'+esc((n.nombre||'?')[0])+'</span>'}</div>
+      <div class="meta"><div class="n">${esc(n.nombre)}</div><div class="s">${n.imagen_url?'Con imagen':'Sin imagen'}</div></div>
+      <div class="acts">
+        <button class="icon" data-edit-nota="${n.id}" title="Editar"><svg viewBox="0 0 24 24"><path d="M4 20h4L18 10l-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg></button>
+        <button class="icon del" data-del-nota="${n.id}" title="Borrar"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M6 7l1 13h10l1-13"/></svg></button>
+      </div>
+    </div>`).join('') : '<div class="empty">Aún no hay notas. Crea la primera (ej. Lavanda, Vainilla, Ámbar) con su imagen.</div>';
+  document.querySelectorAll('[data-edit-nota]').forEach(b=>b.onclick=()=>notaForm(b.dataset.editNota));
+  document.querySelectorAll('[data-del-nota]').forEach(b=>b.onclick=()=>delNota(b.dataset.delNota));
+}
+$('#newNota').onclick = () => notaForm();
+
+function notaForm(id){
+  const n = id ? NOTAS.find(x=>x.id===id) : {nombre:'',imagen_url:''};
+  let imgUrl = n.imagen_url||'', file=null;
+  $('#form').innerHTML = `
+    <h3>${id?'Editar':'Nueva'} nota <button class="x" id="fx">✕</button></h3>
+    <div class="f"><label>Nombre</label><input id="nNombre" value="${esc(n.nombre)}" placeholder="Ej. Bergamota"></div>
+    <div class="f"><label>Imagen</label>
+      <div class="up">
+        <div class="prev" id="nPrev">${imgUrl?`<img src="${imgUrl}">`:'<span class="ph">🖼️</span>'}</div>
+        <div class="col">
+          <label class="pick">Subir imagen<input type="file" id="nFile" accept="image/*"></label>
+          <input class="urlin f" id="nUrl" value="${esc(imgUrl)}" placeholder="…o pega una URL" style="width:100%;padding:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--cream);margin-top:8px">
+          <div class="hint">Sube una foto cuadrada de la nota (lavanda, vainilla, etc.).</div>
+        </div>
+      </div>
+    </div>
+    <button class="save" id="nSave">Guardar nota</button>`;
+  openOv();
+  $('#fx').onclick = closeOv;
+  $('#nFile').onchange = e => { file=e.target.files[0]; if(file){ const r=new FileReader(); r.onload=()=>$('#nPrev').innerHTML=`<img src="${r.result}">`; r.readAsDataURL(file);} };
+  $('#nUrl').oninput = e => { imgUrl=e.target.value.trim(); if(imgUrl&&!file)$('#nPrev').innerHTML=`<img src="${imgUrl}">`; };
+  $('#nSave').onclick = async () => {
+    const nombre = $('#nNombre').value.trim(); if(!nombre) return toast('Escribe el nombre',true);
+    const btn=$('#nSave'); btn.disabled=true; btn.textContent='Guardando…';
+    try{
+      let url = $('#nUrl').value.trim();
+      if(file) url = await uploadImg(file,'notas');
+      const payload = {nombre, imagen_url:url||null};
+      const res = id ? await sb.from('notas').update(payload).eq('id',id)
+                     : await sb.from('notas').insert(payload);
+      if(res.error) throw res.error;
+      toast('Nota guardada'); closeOv(); await loadNotas();
+    }catch(e){ toast(e.message,true); btn.disabled=false; btn.textContent='Guardar nota'; }
+  };
+}
+async function delNota(id){
+  if(!confirm('¿Borrar esta nota? Se quitará de todos los perfumes.'))return;
+  const {error}=await sb.from('notas').delete().eq('id',id);
+  if(error)return toast(error.message,true); toast('Nota borrada'); await loadNotas(); await loadPerfumes();
+}
+
+/* =========================  PERFUMES  ========================= */
+function notasDe(pid){ return REL.filter(r=>r.perfume_id===pid).map(r=>NOTAS.find(n=>n.id===r.nota_id)).filter(Boolean); }
+function renderPerfumes(){
+  $('#perfumesList').innerHTML = PERFUMES.length ? PERFUMES.map(p => {
+    const ns = notasDe(p.id);
+    const precios=[p.precio_3ml,p.precio_5ml,p.precio_10ml].filter(v=>v!=null);
+    return `<div class="row">
+      <div class="th contain">${p.imagen_url?`<img src="${p.imagen_url}">`:'<span style="color:var(--gold-deep);font-family:Cormorant Garamond;font-size:1.3rem">'+esc((p.marca||'A')[0])+'</span>'}</div>
+      <div class="meta">
+        <div class="n">${esc(p.nombre)}</div>
+        <div class="s">${esc(p.marca||'')} · ${esc(p.genero||'')} · ${precios.length?'desde '+fmt(Math.min(...precios)):'sin precio'}</div>
+        <div class="tagline">
+          <span class="pill ${p.activo?'on':'off'}">${p.activo?'Activo':'Oculto'}</span>
+          ${p.destacado?'<span class="tg">★ Destacado</span>':''}
+          ${ns.slice(0,4).map(n=>`<span class="tg">${esc(n.nombre)}</span>`).join('')}
+          ${ns.length>4?`<span class="tg">+${ns.length-4}</span>`:''}
+        </div>
+      </div>
+      <div class="acts">
+        <button class="icon" data-edit-p="${p.id}" title="Editar"><svg viewBox="0 0 24 24"><path d="M4 20h4L18 10l-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg></button>
+        <button class="icon del" data-del-p="${p.id}" title="Borrar"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M6 7l1 13h10l1-13"/></svg></button>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty">Aún no hay perfumes. Empieza creando notas y luego tu primer perfume.</div>';
+  document.querySelectorAll('[data-edit-p]').forEach(b=>b.onclick=()=>perfumeForm(b.dataset.editP));
+  document.querySelectorAll('[data-del-p]').forEach(b=>b.onclick=()=>delPerfume(b.dataset.delP));
+}
+$('#newPerfume').onclick = () => perfumeForm();
+
+function perfumeForm(id){
+  const p = id ? PERFUMES.find(x=>x.id===id) : {genero:'Unisex',activo:true,orden:0};
+  let selNotas = id ? new Set(notasDe(id).map(n=>n.id)) : new Set();
+  let imgUrl = p.imagen_url||'', file=null;
+
+  $('#form').innerHTML = `
+    <h3>${id?'Editar':'Nuevo'} perfume <button class="x" id="fx">✕</button></h3>
+    <div class="grid2">
+      <div class="f"><label>Marca / Diseñador</label><input id="pMarca" value="${esc(p.marca||'')}" placeholder="Ej. Valentino"></div>
+      <div class="f"><label>Género</label>
+        <select id="pGenero">
+          ${['Hombre','Mujer','Unisex'].map(g=>`<option ${p.genero===g?'selected':''}>${g}</option>`).join('')}
+        </select></div>
+    </div>
+    <div class="f"><label>Nombre del perfume</label><input id="pNombre" value="${esc(p.nombre||'')}" placeholder="Ej. Uomo Born In Roma Extradose"></div>
+    <div class="f"><label>Descripción (opcional)</label><textarea id="pDesc" placeholder="Amaderado aromático intenso…">${esc(p.descripcion||'')}</textarea></div>
+
+    <div class="f"><label>Foto del frasco</label>
+      <div class="up">
+        <div class="prev" id="pPrev">${imgUrl?`<img src="${imgUrl}">`:'<span class="ph">🧴</span>'}</div>
+        <div class="col">
+          <label class="pick">Subir imagen<input type="file" id="pFile" accept="image/*"></label>
+          <input id="pUrl" value="${esc(imgUrl)}" placeholder="…o pega una URL" style="width:100%;padding:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--cream);margin-top:8px">
+        </div>
+      </div>
+    </div>
+
+    <div class="f"><label>Pirámide olfativa (texto)</label>
+      <input id="pSalida"  value="${esc(p.notas_salida||'')}"  placeholder="Salida: Cardamomo, Bergamota" style="margin-bottom:8px">
+      <input id="pCorazon" value="${esc(p.notas_corazon||'')}" placeholder="Corazón: Lavanda, Acorde Amaderado" style="margin-bottom:8px">
+      <input id="pFondo"   value="${esc(p.notas_fondo||'')}"   placeholder="Fondo: Vainilla Negra, Vetiver, Ámbar">
+    </div>
+
+    <div class="f"><label>Notas aromáticas (con imagen) — toca para seleccionar</label>
+      <div class="notas-pick" id="notasPick">
+        ${NOTAS.length?NOTAS.map(n=>`
+          <div class="np ${selNotas.has(n.id)?'sel':''}" data-nota="${n.id}">
+            <div class="tick">✓</div>
+            <div class="ph ${n.imagen_url?'':'empty'}">${n.imagen_url?`<img src="${n.imagen_url}">`:esc((n.nombre||'?')[0])}</div>
+            <span>${esc(n.nombre)}</span>
+          </div>`).join(''):'<div class="hint" style="padding:14px">No hay notas todavía. Créalas en la pestaña «Notas».</div>'}
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="f"><label>Precio 3ml</label><input id="p3" type="number" step="0.01" value="${p.precio_3ml??''}" placeholder="29.90"></div>
+      <div class="f"><label>Precio 5ml</label><input id="p5" type="number" step="0.01" value="${p.precio_5ml??''}" placeholder="39.90"></div>
+      <div class="f"><label>Precio 10ml</label><input id="p10" type="number" step="0.01" value="${p.precio_10ml??''}" placeholder="69.90"></div>
+      <div class="f"><label>Orden</label><input id="pOrden" type="number" value="${p.orden??0}"></div>
+      <div class="f"><label>Duración</label><input id="pLong" value="${esc(p.longevidad||'')}" placeholder="7 h"></div>
+      <div class="f"><label>Estela</label><input id="pEst" value="${esc(p.estela||'')}" placeholder="Fuerte"></div>
+    </div>
+
+    <div class="f" style="display:flex;gap:24px">
+      <label class="chk"><input type="checkbox" id="pDest" ${p.destacado?'checked':''}> Destacado</label>
+      <label class="chk"><input type="checkbox" id="pActivo" ${p.activo!==false?'checked':''}> Visible en la tienda</label>
+    </div>
+
+    <button class="save" id="pSave">Guardar perfume</button>`;
+  openOv();
+  $('#fx').onclick = closeOv;
+  $('#pFile').onchange = e => { file=e.target.files[0]; if(file){const r=new FileReader();r.onload=()=>$('#pPrev').innerHTML=`<img src="${r.result}">`;r.readAsDataURL(file);} };
+  $('#pUrl').oninput = e => { imgUrl=e.target.value.trim(); if(imgUrl&&!file)$('#pPrev').innerHTML=`<img src="${imgUrl}">`; };
+  document.querySelectorAll('#notasPick .np').forEach(el => el.onclick = () => {
+    const nid=el.dataset.nota; el.classList.toggle('sel');
+    el.classList.contains('sel')?selNotas.add(nid):selNotas.delete(nid);
+  });
+
+  $('#pSave').onclick = async () => {
+    const nombre=$('#pNombre').value.trim(), marca=$('#pMarca').value.trim();
+    if(!marca||!nombre) return toast('Marca y nombre son obligatorios',true);
+    const btn=$('#pSave'); btn.disabled=true; btn.textContent='Guardando…';
+    try{
+      let url=$('#pUrl').value.trim();
+      if(file) url = await uploadImg(file,'perfumes');
+      const num = v => v===''?null:Number(v);
+      const payload = {
+        marca, nombre, genero:$('#pGenero').value, descripcion:$('#pDesc').value.trim()||null,
+        imagen_url:url||null,
+        notas_salida:$('#pSalida').value.trim()||null, notas_corazon:$('#pCorazon').value.trim()||null,
+        notas_fondo:$('#pFondo').value.trim()||null,
+        precio_3ml:num($('#p3').value), precio_5ml:num($('#p5').value), precio_10ml:num($('#p10').value),
+        longevidad:$('#pLong').value.trim()||null, estela:$('#pEst').value.trim()||null,
+        destacado:$('#pDest').checked, activo:$('#pActivo').checked, orden:num($('#pOrden').value)||0
+      };
+      let pid = id;
+      if(id){ const {error}=await sb.from('perfumes').update(payload).eq('id',id); if(error)throw error; }
+      else{ const {data,error}=await sb.from('perfumes').insert(payload).select('id').single(); if(error)throw error; pid=data.id; }
+      // sincronizar notas
+      await sb.from('perfume_notas').delete().eq('perfume_id',pid);
+      if(selNotas.size){
+        const rows=[...selNotas].map(nid=>({perfume_id:pid,nota_id:nid}));
+        const {error}=await sb.from('perfume_notas').insert(rows); if(error)throw error;
+      }
+      toast('Perfume guardado'); closeOv(); await loadPerfumes();
+    }catch(e){ toast(e.message,true); btn.disabled=false; btn.textContent='Guardar perfume'; }
+  };
+}
+async function delPerfume(id){
+  if(!confirm('¿Borrar este perfume?'))return;
+  const {error}=await sb.from('perfumes').delete().eq('id',id);
+  if(error)return toast(error.message,true); toast('Perfume borrado'); await loadPerfumes();
+}
+
+/* ---------- Overlay + toast ---------- */
+function openOv(){ $('#ov').classList.add('open'); document.body.style.overflow='hidden'; }
+function closeOv(){ $('#ov').classList.remove('open'); document.body.style.overflow=''; }
+$('#ov').onclick = e => { if(e.target.id==='ov') closeOv(); };
+let tt; function toast(m,bad){ const t=$('#toast'); t.textContent=m; t.className='toast show'+(bad?' bad':''); clearTimeout(tt); tt=setTimeout(()=>t.className='toast',2600); }
+</script>
+</body>
+</html>
