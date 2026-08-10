@@ -109,7 +109,9 @@ header button.out:hover{color:var(--danger)}
 .imgs .add:hover{border-color:var(--gold-3)}
 
 /* Presentaciones (tamaño + precio dinámicos) */
-.pres-row{display:grid;grid-template-columns:1fr 1fr 42px;gap:10px;margin-bottom:9px;align-items:center}
+.pres-row{display:grid;grid-template-columns:1fr 1fr 1fr 42px;gap:8px;margin-bottom:9px;align-items:center}
+.pres-head{display:grid;grid-template-columns:1fr 1fr 1fr 42px;gap:8px;margin-bottom:6px}
+.pres-head span{font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2)}
 .pres-row input{width:100%;padding:11px 12px;background:var(--panel-2);border:1px solid var(--line);
   border-radius:10px;color:var(--cream);font-size:.92rem;outline:none}
 .pres-row input:focus{border-color:var(--gold-3)}
@@ -333,6 +335,7 @@ function renderPerfumes(){
         <div class="s">${esc(p.marca||'')} · ${esc(p.genero||'')} · ${precios.length?'desde '+fmt(Math.min(...precios)):'sin precio'} · ${imgsOf(p).length} img</div>
         <div class="tagline">
           <span class="pill ${p.activo?'on':'off'}">${p.activo?'Activo':'Oculto'}</span>
+          ${p.categoria?`<span class="tg">${esc(p.categoria)}</span>`:''}
           ${p.destacado?'<span class="tg">★ Destacado</span>':''}
           ${ns.slice(0,4).map(n=>`<span class="tg">${esc(n.nombre)}</span>`).join('')}
           ${ns.length>4?`<span class="tg">+${ns.length-4}</span>`:''}
@@ -353,15 +356,18 @@ function perfumeForm(id){
   const p = id ? PERFUMES.find(x=>x.id===id) : {genero:'Unisex',activo:true,orden:0};
   let selNotas = id ? new Set(notasDe(id).map(n=>n.id)) : new Set();
   let imgs = imgsOf(p).slice();                       // galería de imágenes
-  let pres = presOf(p).map(x=>({ml:x.ml, precio:x.precio})); // tamaños/precios
-  if(!pres.length) pres = [{ml:'',precio:''}];
+  let pres = presOf(p).map(x=>({ml:x.ml, precio:x.precio, antes:x.antes})); // tamaños/precios/antes
+  if(!pres.length) pres = [{ml:'',precio:'',antes:''}];
+  const cats = [['Diseñador','Diseñador'],['Árabe','Perfume Árabe'],['Nicho','Nicho']];
 
   $('#form').innerHTML = `
     <h3>${id?'Editar':'Nuevo'} perfume <button class="x" id="fx">✕</button></h3>
+    <div class="f"><label>Marca / Diseñador</label><input id="pMarca" value="${esc(p.marca||'')}" placeholder="Ej. Valentino"></div>
     <div class="grid2">
-      <div class="f"><label>Marca / Diseñador</label><input id="pMarca" value="${esc(p.marca||'')}" placeholder="Ej. Valentino"></div>
       <div class="f"><label>Género</label>
         <select id="pGenero">${['Hombre','Mujer','Unisex'].map(g=>`<option ${p.genero===g?'selected':''}>${g}</option>`).join('')}</select></div>
+      <div class="f"><label>Tipo / Categoría</label>
+        <select id="pCategoria">${cats.map(([v,lab])=>`<option value="${v}" ${(p.categoria||'Diseñador')===v?'selected':''}>${lab}</option>`).join('')}</select></div>
     </div>
     <div class="f"><label>Nombre del perfume</label><input id="pNombre" value="${esc(p.nombre||'')}" placeholder="Ej. Uomo Born In Roma Extradose"></div>
     <div class="f"><label>Descripción (opcional)</label><textarea id="pDesc" placeholder="Amaderado aromático intenso…">${esc(p.descripcion||'')}</textarea></div>
@@ -376,9 +382,14 @@ function perfumeForm(id){
     </div>
 
     <div class="f"><label>Pirámide olfativa (texto)</label>
+      <div style="display:flex;gap:8px;margin-bottom:9px;flex-wrap:wrap">
+        <button class="btn ghost" id="buscarNotas" type="button" style="padding:8px 14px;font-size:.82rem">🔎 Buscar notas ↗</button>
+        <button class="btn ghost" id="detectarNotas" type="button" style="padding:8px 14px;font-size:.82rem">✨ Detectar notas del texto</button>
+      </div>
       <input id="pSalida"  value="${esc(p.notas_salida||'')}"  placeholder="Salida: Cardamomo, Bergamota" style="margin-bottom:8px">
       <input id="pCorazon" value="${esc(p.notas_corazon||'')}" placeholder="Corazón: Lavanda, Acorde Amaderado" style="margin-bottom:8px">
       <input id="pFondo"   value="${esc(p.notas_fondo||'')}"   placeholder="Fondo: Vainilla Negra, Vetiver, Ámbar">
+      <div class="hint">Escribe la pirámide y pulsa «Detectar notas»: se marcan solas las notas de tu biblioteca que coincidan.</div>
     </div>
 
     <div class="f"><label>Notas aromáticas (con imagen) — toca para seleccionar</label>
@@ -434,26 +445,50 @@ function perfumeForm(id){
   };
   $('#addUrl').onclick = () => { const u=$('#pUrl').value.trim(); if(u){ imgs.push(u); $('#pUrl').value=''; renderImgs(); } };
 
-  /* --- presentaciones dinámicas --- */
+  /* --- presentaciones dinámicas (tamaño, precio, antes) --- */
+  function pctOf(x){ const a=Number(x.antes), pr=Number(x.precio); return (a&&pr&&a>pr)?Math.round((a-pr)/a*100):0; }
   function renderPres(){
-    $('#presList').innerHTML = pres.map((x,i)=>`
-      <div class="pres-row">
-        <input data-ml="${i}" value="${esc(x.ml||'')}" placeholder="Tamaño (ej. 5ml)">
-        <input data-precio="${i}" type="number" step="0.01" value="${x.precio??''}" placeholder="Precio (ej. 39.90)">
-        <button class="del" data-delpres="${i}" type="button">✕</button>
-      </div>`).join('');
-    document.querySelectorAll('[data-ml]').forEach(inp=>inp.oninput=e=>pres[+inp.dataset.ml].ml=e.target.value);
-    document.querySelectorAll('[data-precio]').forEach(inp=>inp.oninput=e=>pres[+inp.dataset.precio].precio=e.target.value);
-    document.querySelectorAll('[data-delpres]').forEach(b=>b.onclick=()=>{ pres.splice(+b.dataset.delpres,1); if(!pres.length)pres=[{ml:'',precio:''}]; renderPres(); });
+    $('#presList').innerHTML = `
+      <div class="pres-head"><span>Tamaño</span><span>Precio S/</span><span>Antes S/ (opcional)</span><span></span></div>` +
+      pres.map((x,i)=>{
+        const pct=pctOf(x);
+        return `<div class="pres-row">
+          <input data-ml="${i}" value="${esc(x.ml||'')}" placeholder="5ml">
+          <input data-precio="${i}" type="number" step="0.01" value="${x.precio??''}" placeholder="39.90">
+          <input data-antes="${i}" type="number" step="0.01" value="${x.antes??''}" placeholder="—" title="${pct?('−'+pct+'% de descuento'):'Sin oferta'}" style="${pct?'border-color:var(--gold-3)':''}">
+          <button class="del" data-delpres="${i}" type="button">✕</button>
+        </div>${pct?`<div style="font-size:.7rem;color:var(--gold-2);margin:-4px 0 8px 2px">Oferta: −${pct}%</div>`:''}`;
+      }).join('');
+    document.querySelectorAll('[data-ml]').forEach(inp=>inp.oninput=e=>{pres[+inp.dataset.ml].ml=e.target.value;});
+    document.querySelectorAll('[data-precio]').forEach(inp=>inp.oninput=e=>{pres[+inp.dataset.precio].precio=e.target.value; renderPres();});
+    document.querySelectorAll('[data-antes]').forEach(inp=>inp.oninput=e=>{pres[+inp.dataset.antes].antes=e.target.value; renderPres();});
+    document.querySelectorAll('[data-delpres]').forEach(b=>b.onclick=()=>{ pres.splice(+b.dataset.delpres,1); if(!pres.length)pres=[{ml:'',precio:'',antes:''}]; renderPres(); });
   }
   renderPres();
-  $('#addPres').onclick = () => { pres.push({ml:'',precio:''}); renderPres(); };
+  $('#addPres').onclick = () => { pres.push({ml:'',precio:'',antes:''}); renderPres(); };
 
   /* --- notas --- */
+  function refreshNotasUI(){ document.querySelectorAll('#notasPick .np').forEach(el=>el.classList.toggle('sel', selNotas.has(el.dataset.nota))); }
   document.querySelectorAll('#notasPick .np').forEach(el => el.onclick = () => {
     const nid=el.dataset.nota; el.classList.toggle('sel');
     el.classList.contains('sel')?selNotas.add(nid):selNotas.delete(nid);
   });
+
+  /* --- buscar / detectar notas --- */
+  $('#buscarNotas').onclick = () => {
+    const q = ($('#pMarca').value+' '+$('#pNombre').value+' notas fragrantica').trim();
+    if(!q){ toast('Escribe marca y nombre primero',true); return; }
+    window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank');
+  };
+  $('#detectarNotas').onclick = () => {
+    const norm = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    const hay = norm($('#pSalida').value+' , '+$('#pCorazon').value+' , '+$('#pFondo').value);
+    if(!hay.trim().replace(/,/g,'')){ toast('Primero escribe la pirámide',true); return; }
+    let n=0;
+    NOTAS.forEach(nt=>{ const name=norm(nt.nombre); if(name && hay.includes(name) && !selNotas.has(nt.id)){ selNotas.add(nt.id); n++; } });
+    refreshNotasUI();
+    toast(n?`Se marcaron ${n} nota(s)`:'Sin coincidencias en tu biblioteca de notas');
+  };
 
   /* --- guardar --- */
   $('#pSave').onclick = async () => {
@@ -461,12 +496,17 @@ function perfumeForm(id){
     if(!marca||!nombre) return toast('Marca y nombre son obligatorios',true);
     const presLimpio = pres
       .filter(x=>String(x.ml).trim()!=='')
-      .map(x=>({ml:String(x.ml).trim(), precio:x.precio===''||x.precio==null?null:Number(x.precio)}));
+      .map(x=>{
+        const o = {ml:String(x.ml).trim(), precio:x.precio===''||x.precio==null?null:Number(x.precio)};
+        if(x.antes!==''&&x.antes!=null && Number(x.antes)>0) o.antes = Number(x.antes);
+        return o;
+      });
     const btn=$('#pSave'); btn.disabled=true; btn.textContent='Guardando…';
     try{
       const num = v => v===''||v==null?null:Number(v);
       const payload = {
-        marca, nombre, genero:$('#pGenero').value, descripcion:$('#pDesc').value.trim()||null,
+        marca, nombre, genero:$('#pGenero').value, categoria:$('#pCategoria').value,
+        descripcion:$('#pDesc').value.trim()||null,
         imagenes: imgs, imagen_url: imgs[0]||null,
         presentaciones: presLimpio,
         notas_salida:$('#pSalida').value.trim()||null, notas_corazon:$('#pCorazon').value.trim()||null,
