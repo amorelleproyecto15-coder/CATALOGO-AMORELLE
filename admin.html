@@ -132,6 +132,7 @@ img{display:block;max-width:100%}
       <button class="tab active" data-tab="productos">Productos</button>
       <button class="tab" data-tab="notas">Notas</button>
       <button class="tab" data-tab="promos">Promociones</button>
+      <button class="tab" data-tab="combos">Combos</button>
       <button class="tab" data-tab="ventas">Ventas</button>
       <button class="tab" data-tab="ajustes">Ajustes</button>
     </div>
@@ -152,6 +153,11 @@ img{display:block;max-width:100%}
   <section id="tab-promos" style="display:none">
     <div class="bar"><button class="btn" id="newPromo">+ Nueva promoción</button></div>
     <div class="list" id="listPromos"></div>
+  </section>
+
+  <section id="tab-combos" style="display:none">
+    <div class="bar"><button class="btn" id="newCombo">+ Nuevo combo</button></div>
+    <div class="list" id="listCombos"></div>
   </section>
 
   <section id="tab-ventas" style="display:none">
@@ -215,12 +221,13 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   $('#tab-productos').style.display = t.dataset.tab==='productos'?'block':'none';
   $('#tab-notas').style.display    = t.dataset.tab==='notas'?'block':'none';
   $('#tab-promos').style.display   = t.dataset.tab==='promos'?'block':'none';
+  $('#tab-combos').style.display   = t.dataset.tab==='combos'?'block':'none';
   $('#tab-ventas').style.display   = t.dataset.tab==='ventas'?'block':'none';
   $('#tab-ajustes').style.display  = t.dataset.tab==='ajustes'?'block':'none';
 });
 
 /* ============ Carga ============ */
-async function boot(){ await Promise.all([loadNotas(), loadProductos(), loadPromos(), loadVentas(), loadAjustes()]); renderVentas(); }
+async function boot(){ await Promise.all([loadNotas(), loadProductos(), loadPromos(), loadCombos(), loadVentas(), loadAjustes()]); renderVentas(); }
 
 async function loadAjustes(){
   const {data}=await sb.from('ajustes').select('*').eq('id','principal').maybeSingle();
@@ -573,6 +580,155 @@ function promoForm(id){
 }
 async function delPromo(id){ if(!confirm('¿Eliminar esta promoción?'))return; const {error}=await sb.from('promociones').delete().eq('id',id); if(error){toast('Error: '+error.message,true);return;} toast('Eliminada'); loadPromos(); }
 
+/* ============ COMBOS / PROMOCIONES ============ */
+let COMBOS=[];
+async function loadCombos(){ const {data}=await sb.from('combos').select('*').order('orden').order('created_at',{ascending:false}); COMBOS=data||[]; renderCombos(); }
+function tallasDe(c){ return (c.tallas||[]).filter(t=>t&&String(t.ml).trim()); }
+function renderCombos(){
+  if(!COMBOS.length){ $('#listCombos').innerHTML='<div class="hint">Sin combos. Crea packs con nombre, tallas y "combínalo y ahorra" (como la sección Promociones del catálogo).</div>'; return; }
+  $('#listCombos').innerHTML = COMBOS.map(c=>{
+    const img=imgsOf(c)[0]; const t=tallasDe(c);
+    return `<div class="item">
+      <div class="th">${img?`<img src="${esc(img)}">`:esc((c.nombre||'?')[0])}</div>
+      <div class="info">
+        <div class="n">${esc(c.nombre)} ${c.destacado?'<span class="tg">Destacado</span>':''} ${c.visible===false?'<span class="tg off">Oculto</span>':''}</div>
+        <div class="sub">${t.length} tamaño${t.length!==1?'s':''}${(c.addons&&c.addons.length)?` · ${c.addons.length} add-on${c.addons.length!==1?'s':''}`:''}${(c.incluye&&c.incluye.length)?` · incluye ${c.incluye.length}`:''}</div>
+      </div>
+      <div class="acts">
+        <button class="iconbtn" data-edit="${c.id}">✏️</button>
+        <button class="iconbtn" data-del="${c.id}">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+  $('#listCombos').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>comboForm(b.dataset.edit));
+  $('#listCombos').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delCombo(b.dataset.del));
+}
+
+function comboForm(id){
+  const c = id ? COMBOS.find(x=>x.id===id) : {};
+  let imgs = imgsOf(c).slice();
+  let tallas = (c.tallas && c.tallas.length) ? JSON.parse(JSON.stringify(c.tallas))
+    : [{ml:'3',sprays:'50',precio:'',antes:'',mas_vendido:false,activo:true},{ml:'5',sprays:'90',precio:'',antes:'',mas_vendido:true,activo:true},{ml:'10',sprays:'180',precio:'',antes:'',mas_vendido:false,activo:true}];
+  let addons = (c.addons && c.addons.length) ? JSON.parse(JSON.stringify(c.addons)) : [];
+  const incluyeTxt = (Array.isArray(c.incluye)?c.incluye:[]).join('\n');
+
+  $('#modal').innerHTML = `
+    <h3>${id?'Editar':'Nuevo'} combo</h3>
+    <div class="field"><label>Nombre del combo</label><input id="cNombre" value="${esc(c.nombre||'')}" placeholder="Ej. ROMPE CUELLOS"></div>
+    <div class="field"><label>Descripción (opcional)</label><input id="cDesc" value="${esc(c.descripcion||'')}" placeholder="Ej. Los 3 más potentes para arrasar"></div>
+
+    <div class="field"><label>Imágenes</label>
+      <input id="cFiles" type="file" accept="image/*" multiple>
+      <div class="imgs" id="cImgList"></div>
+    </div>
+
+    <div class="field"><label>Perfumes que incluye (uno por línea)</label>
+      <textarea id="cIncluye" rows="3" placeholder="Erba Pura&#10;Valentino Uomo&#10;Stronger With You">${esc(incluyeTxt)}</textarea>
+      <div class="hint">Se muestran como etiquetas en el detalle del combo.</div>
+    </div>
+
+    <div class="field"><label>Tamaños (talla · sprays · precio · antes · ⭐más vendido · ✓visible)</label>
+      <div class="hint">"antes" es el precio tachado. Marca ⭐ en el tamaño destacado y ✓ para mostrarlo.</div>
+      <div id="cTallas"></div>
+      <div class="chips" style="margin-top:8px"><button class="np" id="cAddTalla">+ Agregar tamaño</button></div>
+    </div>
+
+    <div class="field"><label>Combínalo y ahorra (add-ons opcionales)</label>
+      <div class="hint">Productos extra que el cliente puede sumar con un clic (con su precio y precio tachado).</div>
+      <div id="cAddons"></div>
+      <div class="chips" style="margin-top:8px"><button class="np" id="cAddAddon">+ Agregar add-on</button></div>
+    </div>
+
+    <div class="grid2">
+      <div class="field"><label>Orden</label><input id="cOrden" type="number" value="${c.orden??0}"></div>
+      <div class="field" style="display:flex;align-items:flex-end;gap:18px">
+        <div class="check" style="margin:0"><input type="checkbox" id="cDest" ${c.destacado?'checked':''}><label for="cDest">Destacado</label></div>
+        <div class="check" style="margin:0"><input type="checkbox" id="cVis" ${c.visible!==false?'checked':''}><label for="cVis">Visible</label></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="cSave">${id?'Guardar cambios':'Crear combo'}</button>
+      <button class="btn ghost" id="cCancel">Cancelar</button>
+    </div>`;
+
+  function renderImgsC(){
+    $('#cImgList').innerHTML = imgs.map((u,i)=>`<div class="im"><img src="${esc(u)}"><button data-rmimg="${i}">×</button></div>`).join('');
+    $('#cImgList').querySelectorAll('[data-rmimg]').forEach(b=>b.onclick=()=>{ imgs.splice(+b.dataset.rmimg,1); renderImgsC(); });
+  }
+  renderImgsC();
+  $('#cFiles').onchange = async e => {
+    const files=[...e.target.files]; if(!files.length)return;
+    toast('Subiendo imágenes...');
+    for(const f of files){ const u=await uploadImg(f,'combos'); if(u) imgs.push(u); }
+    renderImgsC(); toast('Imágenes subidas');
+  };
+
+  function renderTallas(){
+    $('#cTallas').innerHTML = tallas.map((t,i)=>`
+      <div class="pres-row" style="grid-template-columns:.7fr .7fr .8fr .8fr auto auto auto">
+        <input data-tml="${i}" value="${esc(t.ml)}" placeholder="ml">
+        <input data-tspr="${i}" value="${esc(t.sprays||'')}" placeholder="sprays">
+        <input data-tprecio="${i}" type="number" step="0.01" value="${t.precio??''}" placeholder="precio">
+        <input data-tantes="${i}" type="number" step="0.01" value="${t.antes??''}" placeholder="antes">
+        <div class="chk" title="Más vendido"><input type="checkbox" data-tbest="${i}" ${t.mas_vendido?'checked':''}></div>
+        <div class="chk" title="Visible"><input type="checkbox" data-tact="${i}" ${t.activo!==false?'checked':''}></div>
+        <button class="del" data-tdel="${i}">×</button>
+      </div>`).join('');
+    $('#cTallas').querySelectorAll('[data-tml]').forEach(el=>el.oninput=()=>tallas[+el.dataset.tml].ml=el.value);
+    $('#cTallas').querySelectorAll('[data-tspr]').forEach(el=>el.oninput=()=>tallas[+el.dataset.tspr].sprays=el.value);
+    $('#cTallas').querySelectorAll('[data-tprecio]').forEach(el=>el.oninput=()=>tallas[+el.dataset.tprecio].precio=el.value);
+    $('#cTallas').querySelectorAll('[data-tantes]').forEach(el=>el.oninput=()=>tallas[+el.dataset.tantes].antes=el.value);
+    $('#cTallas').querySelectorAll('[data-tbest]').forEach(el=>el.onchange=()=>tallas[+el.dataset.tbest].mas_vendido=el.checked);
+    $('#cTallas').querySelectorAll('[data-tact]').forEach(el=>el.onchange=()=>tallas[+el.dataset.tact].activo=el.checked);
+    $('#cTallas').querySelectorAll('[data-tdel]').forEach(el=>el.onclick=()=>{ tallas.splice(+el.dataset.tdel,1); renderTallas(); });
+  }
+  renderTallas();
+  $('#cAddTalla').onclick=()=>{ tallas.push({ml:'',sprays:'',precio:'',antes:'',mas_vendido:false,activo:true}); renderTallas(); };
+
+  function renderAddons(){
+    $('#cAddons').innerHTML = addons.length ? addons.map((a,i)=>`
+      <div class="pres-row" style="grid-template-columns:1.4fr .6fr .8fr .8fr auto auto">
+        <input data-aname="${i}" value="${esc(a.nombre||'')}" placeholder="nombre">
+        <input data-aml="${i}" value="${esc(a.ml||'')}" placeholder="ml">
+        <input data-aprecio="${i}" type="number" step="0.01" value="${a.precio??''}" placeholder="precio">
+        <input data-aantes="${i}" type="number" step="0.01" value="${a.antes??''}" placeholder="antes">
+        <div class="chk" title="Más vendido"><input type="checkbox" data-abest="${i}" ${a.mas_vendido?'checked':''}></div>
+        <button class="del" data-adel="${i}">×</button>
+      </div>`).join('') : '<div class="hint">Sin add-ons. (Opcional)</div>';
+    $('#cAddons').querySelectorAll('[data-aname]').forEach(el=>el.oninput=()=>addons[+el.dataset.aname].nombre=el.value);
+    $('#cAddons').querySelectorAll('[data-aml]').forEach(el=>el.oninput=()=>addons[+el.dataset.aml].ml=el.value);
+    $('#cAddons').querySelectorAll('[data-aprecio]').forEach(el=>el.oninput=()=>addons[+el.dataset.aprecio].precio=el.value);
+    $('#cAddons').querySelectorAll('[data-aantes]').forEach(el=>el.oninput=()=>addons[+el.dataset.aantes].antes=el.value);
+    $('#cAddons').querySelectorAll('[data-abest]').forEach(el=>el.onchange=()=>addons[+el.dataset.abest].mas_vendido=el.checked);
+    $('#cAddons').querySelectorAll('[data-adel]').forEach(el=>el.onclick=()=>{ addons.splice(+el.dataset.adel,1); renderAddons(); });
+  }
+  renderAddons();
+  $('#cAddAddon').onclick=()=>{ addons.push({nombre:'',ml:'5',precio:'',antes:'',mas_vendido:false}); renderAddons(); };
+
+  $('#cCancel').onclick=closeOv;
+  $('#cSave').onclick = async () => {
+    const nombre=$('#cNombre').value.trim(); if(!nombre){ toast('Ponle un nombre al combo',true); return; }
+    const tallasLimpio = tallas.filter(t=>String(t.ml).trim() && Number(t.precio)>0)
+      .map(t=>({ml:String(t.ml).trim(), sprays:String(t.sprays||'').trim()||null, precio:Number(t.precio), antes:t.antes?Number(t.antes):null, mas_vendido:!!t.mas_vendido, activo:t.activo!==false}));
+    if(!tallasLimpio.length){ toast('Agrega al menos un tamaño con precio',true); return; }
+    const addonsLimpio = addons.filter(a=>String(a.nombre).trim() && Number(a.precio)>0)
+      .map(a=>({nombre:String(a.nombre).trim(), ml:String(a.ml||'').trim()||null, precio:Number(a.precio), antes:a.antes?Number(a.antes):null, mas_vendido:!!a.mas_vendido, imagen_url:a.imagen_url||null}));
+    const incluye = $('#cIncluye').value.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean);
+    const payload = {
+      nombre, descripcion:$('#cDesc').value.trim()||null,
+      imagenes:imgs, imagen_url:imgs[0]||null,
+      tallas:tallasLimpio, incluye, addons:addonsLimpio,
+      destacado:$('#cDest').checked, visible:$('#cVis').checked, orden:parseInt($('#cOrden').value)||0,
+    };
+    const {error}= id ? await sb.from('combos').update(payload).eq('id',id) : await sb.from('combos').insert(payload);
+    if(error){ toast('Error: '+error.message,true); return; }
+    toast('Combo guardado ✓'); closeOv(); loadCombos();
+  };
+  openOv();
+}
+async function delCombo(id){ if(!confirm('¿Eliminar este combo?'))return; const {error}=await sb.from('combos').delete().eq('id',id); if(error){toast('Error: '+error.message,true);return;} toast('Combo eliminado'); loadCombos(); }
+
 /* ============ VENTAS ============ */
 const VENTA_ESTADOS = ['nuevo','confirmado','entregado','cancelado'];
 function fmtV(n){ return (CONFIG.MONEDA||'S/')+' '+Number(n||0).toFixed(2); }
@@ -871,6 +1027,7 @@ function closeOv(){ $('#ov').classList.remove('open'); document.body.style.overf
 $('#newProd').onclick=()=>prodForm(null);
 $('#newNota').onclick=()=>notaForm(null);
 $('#newPromo').onclick=()=>promoForm(null);
+if($('#newCombo')) $('#newCombo').onclick=()=>comboForm(null);
 if($('#newVenta')) $('#newVenta').onclick=()=>ventaManualForm();
 if($('#saveAjustes')) $('#saveAjustes').onclick=saveAjustes;
 

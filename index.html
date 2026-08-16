@@ -209,6 +209,47 @@ header::after{content:""; position:absolute; left:0; right:0; bottom:0; height:1
 .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 
 @media(max-width:560px){.brand .word{font-size:1.2rem}.sheet h2{font-size:1.6rem}}
+
+/* ===== Pestañas de vista: Catálogo / Promociones ===== */
+.viewtabs{max-width:1200px; margin:10px auto 0; padding:0 20px; display:flex; gap:8px; justify-content:center}
+.vtab{padding:10px 22px; border-radius:999px; border:1px solid var(--line); background:var(--panel); color:var(--muted); font-size:.86rem; letter-spacing:.04em; transition:.2s}
+.vtab:hover{color:var(--gold-1); border-color:var(--gold-deep)}
+.vtab.active{color:var(--bg); background:var(--gold-grad); border-color:transparent; font-weight:600}
+.vtab .fire{margin-left:6px}
+
+/* ===== Tarjeta de combo ===== */
+.badge-oferta{position:absolute; top:11px; left:11px; z-index:2; font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; padding:5px 11px; border-radius:999px; background:var(--gold-grad); color:var(--bg); font-weight:700}
+.card .precio .antes{color:var(--muted-2); text-decoration:line-through; font-size:.8rem; font-weight:400; margin-right:6px; -webkit-text-fill-color:var(--muted-2)}
+.combos-grid .imgwrap{padding:16px}
+
+/* ===== Modal combo: incluye + tallas con sprays + combínalo y ahorra ===== */
+.incluye{display:flex; flex-wrap:wrap; gap:7px; margin-top:4px}
+.incluye .it{font-size:.76rem; color:var(--cream); background:var(--panel-2); border:1px solid var(--line-soft); border-radius:999px; padding:4px 11px}
+.tallas .talla .spr{font-size:.66rem; color:var(--muted); margin-top:2px}
+.talla .best{position:absolute; top:-9px; left:50%; transform:translateX(-50%); background:var(--bg); color:var(--gold-1); border:1px solid var(--gold-deep); font-size:.58rem; letter-spacing:.1em; text-transform:uppercase; font-weight:700; padding:2px 8px; border-radius:999px; white-space:nowrap}
+.talla.best-on{border-color:var(--gold-2)}
+.combo-box{margin-top:18px; border:1px solid var(--line); border-radius:14px; overflow:hidden}
+.combo-box .cb-h{padding:11px 14px; background:var(--panel-2); font-size:.76rem; letter-spacing:.16em; text-transform:uppercase; color:var(--gold-2); border-bottom:1px solid var(--line-soft)}
+.addon{display:flex; align-items:center; gap:11px; padding:11px 14px; border-bottom:1px solid var(--line-soft); cursor:pointer; transition:background .15s}
+.addon:last-child{border-bottom:none}
+.addon:hover{background:var(--panel-2)}
+.addon input{width:20px; height:20px; accent-color:var(--gold-3); flex:0 0 auto}
+.addon .th{width:42px; height:42px; border-radius:9px; overflow:hidden; background:var(--bg-2); border:1px solid var(--line-soft); flex:0 0 auto; display:grid; place-items:center; color:var(--gold-deep); font-family:'Cormorant Garamond',serif}
+.addon .th img{width:100%; height:100%; object-fit:cover}
+.addon .info{flex:1; min-width:0}
+.addon .info .n{font-size:.88rem; color:var(--cream)}
+.addon .info .m{font-size:.72rem; color:var(--muted)}
+.addon .pr{text-align:right; white-space:nowrap}
+.addon .pr .antes{display:block; color:var(--muted-2); text-decoration:line-through; font-size:.72rem}
+.addon .pr b{color:var(--gold-1); font-size:.9rem; font-weight:600}
+.addon .best2{background:var(--bg); color:var(--gold-1); border:1px solid var(--gold-deep); font-size:.56rem; letter-spacing:.08em; text-transform:uppercase; font-weight:700; padding:2px 7px; border-radius:999px; margin-left:6px}
+.combo-qty{display:flex; align-items:center; gap:14px; margin-top:16px; justify-content:center}
+.combo-qty .lbl{color:var(--muted); font-size:.82rem}
+.combo-qty .stepper{display:inline-flex; align-items:center; gap:14px; background:var(--panel-2); border:1px solid var(--line); border-radius:999px; padding:5px 8px}
+.combo-qty .stepper button{width:26px; height:26px; color:var(--gold-2); font-size:1.1rem}
+.combo-total{display:flex; justify-content:space-between; align-items:baseline; margin-top:16px; padding-top:14px; border-top:1px solid var(--line-soft)}
+.combo-total .k{color:var(--muted)}
+.combo-total .v{font-family:'Cormorant Garamond',serif; font-size:1.5rem; color:var(--gold-1); font-weight:600}
 </style>
 </head>
 <body>
@@ -242,8 +283,15 @@ header::after{content:""; position:absolute; left:0; right:0; bottom:0; height:1
 </section>
 
 <div class="divider"><span></span>◆<span></span></div>
+
+<div class="viewtabs" id="viewtabs" style="display:none">
+  <button class="vtab active" data-view="catalogo">Catálogo</button>
+  <button class="vtab" data-view="promos">Promociones<span class="fire">🔥</span></button>
+</div>
+
 <div class="filters" id="filters"></div>
 <div class="grid" id="grid"><div class="state"><div class="spinner"></div>Cargando catálogo...</div></div>
+<div class="grid combos-grid" id="combosGrid" style="display:none"></div>
 
 <div class="social" id="social"></div>
 
@@ -308,6 +356,7 @@ const ICONS = {
 
 /* ================= Estado ================= */
 let PRODUCTS=[], NOTAS_BY_PROD={}, PROMOS=[], PROD_BY_ID={};
+let COMBOS=[], currentView='catalogo';
 let filterCat='Todos', filterGen='Todos', query='';
 let CART = JSON.parse(localStorage.getItem('cart_'+CONFIG.TIENDA_NOMBRE) || '[]');
 let payMethod='coordinar';
@@ -356,10 +405,52 @@ async function load(){
   const rp = await sb.from('promociones').select('*');
   PROMOS = rp.error ? [] : (rp.data||[]);
 
+  const rc = await sb.from('combos').select('*').eq('visible', true).order('orden').order('created_at');
+  COMBOS = rc.error ? [] : (rc.data||[]).filter(c=>tallasActivas(c).length>0);
+
   const ra = await sb.from('ajustes').select('*').eq('id','principal').maybeSingle();
   if(!ra.error && ra.data && ra.data.hero_sub) $('#heroSub').textContent = ra.data.hero_sub;
 
-  renderFilters(); render();
+  renderFilters(); render(); renderCombos();
+  const vt=$('#viewtabs'); if(vt) vt.style.display = COMBOS.length ? 'flex' : 'none';
+}
+
+/* ================= Combos / Promociones ================= */
+function tallasActivas(c){ return (c.tallas||[]).filter(t=>t&&t.activo!==false&&Number(t.precio)>0).sort((a,b)=>Number(a.precio)-Number(b.precio)); }
+function comboDesde(c){ const t=tallasActivas(c); return t.length?Number(t[0].precio):null; }
+function comboAntesDesde(c){ const t=tallasActivas(c); if(!t.length) return null; const a=Number(t[0].antes); return (a&&a>Number(t[0].precio))?a:null; }
+
+function setView(v){
+  currentView=v;
+  document.querySelectorAll('#viewtabs .vtab').forEach(b=>b.classList.toggle('active', b.dataset.view===v));
+  const promos = v==='promos';
+  $('#filters').style.display = promos ? 'none' : 'flex';
+  $('#grid').style.display    = promos ? 'none' : 'grid';
+  $('#combosGrid').style.display = promos ? 'grid' : 'none';
+  if(promos) renderCombos(); else render();
+}
+
+function renderCombos(){
+  const list = COMBOS.filter(c => !query || (c.nombre||'').toLowerCase().includes(query));
+  if(!list.length){ $('#combosGrid').innerHTML = `<div class="state">No hay promociones disponibles por ahora.</div>`; return; }
+  $('#combosGrid').innerHTML = list.map(c => {
+    const desde = comboDesde(c), antes = comboAntesDesde(c);
+    const main = imgsOf(c)[0];
+    return `<button class="card" data-combo="${c.id}">
+      <span class="badge-oferta">Oferta</span>
+      ${c.destacado ? '<span class="badge-dest" style="left:auto;right:11px">Destacado</span>' : ''}
+      <div class="imgwrap">${main ? `<img src="${esc(main)}" alt="${esc(c.nombre)}" loading="lazy">` : `<span class="ph">${esc((c.nombre||'?')[0])}</span>`}</div>
+      <div class="body">
+        <span class="marca">Promoción</span>
+        <span class="nombre">${esc(c.nombre)}</span>
+        <div class="foot">
+          <span class="precio">${desde!=null?`<small>Desde</small><b>${antes?`<span class="antes">${fmt(antes)}</span>`:''}${fmt(desde)}</b>`:'<small>Precio</small><b>Consultar</b>'}</span>
+          <span class="ver">→</span>
+        </div>
+      </div>
+    </button>`;
+  }).join('');
+  document.querySelectorAll('#combosGrid .card').forEach(c => c.onclick = () => openCombo(c.dataset.combo));
 }
 
 /* ================= Filtros ================= */
@@ -486,6 +577,122 @@ function openProduct(id){
 function closeProduct(){ $('#overlay').classList.remove('open'); document.body.style.overflow=''; }
 $('#overlay').onclick = e => { if(e.target.id==='overlay') closeProduct(); };
 
+/* ================= Modal de combo ================= */
+let curCombo=null, selTier=null, comboQty=1, selAddons=new Set();
+function comboTotal(){
+  if(!curCombo||!selTier) return 0;
+  let t = Number(selTier.precio) * comboQty;
+  (curCombo.addons||[]).forEach((a,i)=>{ if(selAddons.has(i)) t += Number(a.precio)||0; });
+  return Math.round(t*100)/100;
+}
+function refreshComboTotal(){
+  const el=$('#comboTotalV'); if(el) el.textContent = fmt(comboTotal());
+  const b=$('#addComboBtn'); if(b){ b.disabled=!selTier; b.textContent = selTier?`Agregar al carrito · ${fmt(comboTotal())}`:'Elige un tamaño'; }
+}
+function openCombo(id){
+  const c = COMBOS.find(x=>x.id===id); if(!c) return;
+  curCombo=c; selTier=null; comboQty=1; selAddons=new Set();
+  const imgs=imgsOf(c); const mainImg=imgs[0];
+  const tallas=tallasActivas(c);
+  const incluye=Array.isArray(c.incluye)?c.incluye.filter(Boolean):[];
+  const addons=Array.isArray(c.addons)?c.addons.filter(a=>a&&a.nombre&&Number(a.precio)>0):[];
+
+  $('#sheet').innerHTML = `
+    <div class="hd">
+      <button class="close" id="closeSheet" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button>
+      ${mainImg ? `<img id="mainImg" src="${esc(mainImg)}" alt="${esc(c.nombre)}">` : `<div class="ph" style="font-size:4rem">${esc((c.nombre||'?')[0])}</div>`}
+    </div>
+    ${imgs.length>1 ? `<div class="gallery">${imgs.map((u,i)=>`<button class="gthumb ${i===0?'active':''}" data-img="${esc(u)}"><img src="${esc(u)}" alt=""></button>`).join('')}</div>` : ''}
+    <div class="bd">
+      <div class="marca">Promoción</div>
+      <h2>${esc(c.nombre)}</h2>
+      ${c.descripcion?`<div class="genero">${esc(c.descripcion)}</div>`:''}
+
+      ${incluye.length ? `<div class="section-t">Incluye</div>
+        <div class="incluye">${incluye.map(n=>`<span class="it">${esc(n)}</span>`).join('')}</div>` : ''}
+
+      <div class="section-t">Tamaños</div>
+      <div class="tallas" id="tallas">
+        ${tallas.map(t=>{
+          const antes=Number(t.antes)||0, pr=Number(t.precio);
+          return `<button class="talla ${t.mas_vendido?'best-on':''}" data-ml="${esc(t.ml)}" data-price="${pr}" data-antes="${antes||''}">
+            ${t.mas_vendido?'<div class="best">Más vendido</div>':''}
+            <div class="ml">${fmt(pr)}</div>
+            <div class="spr">${esc(mlLabel(t.ml))}${t.sprays?` / ${esc(t.sprays)} sprays`:''}</div>
+            ${antes&&antes>pr?`<div class="pr"><span class="antes">${fmt(antes)}</span></div>`:''}
+          </button>`;
+        }).join('')}
+      </div>
+
+      ${addons.length ? `<div class="combo-box">
+        <div class="cb-h">Combínalo y ahorra</div>
+        ${addons.map((a,i)=>{
+          const antes=Number(a.antes)||0, pr=Number(a.precio);
+          return `<label class="addon" data-addon="${i}">
+            <input type="checkbox" data-addcheck="${i}">
+            <div class="th">${a.imagen_url?`<img src="${esc(a.imagen_url)}" alt="">`:esc((a.nombre||'?')[0])}</div>
+            <div class="info"><div class="n">${esc(a.nombre)}${a.mas_vendido?'<span class="best2">Más vendido</span>':''}</div><div class="m">${a.ml?esc(mlLabel(a.ml)):''}</div></div>
+            <div class="pr">${antes&&antes>pr?`<span class="antes">${fmt(antes)}</span>`:''}<b>${fmt(pr)}</b></div>
+          </label>`;
+        }).join('')}
+      </div>` : ''}
+
+      <div class="combo-qty">
+        <span class="lbl">Cantidad</span>
+        <div class="stepper"><button id="cqMinus">−</button><span id="cqVal">1</span><button id="cqPlus">+</button></div>
+      </div>
+
+      <div class="envio">
+        <svg viewBox="0 0 24 24"><path d="M3 7h11v8H3zM14 10h4l3 3v2h-7z" stroke-linejoin="round"/><circle cx="7" cy="17" r="1.6"/><circle cx="17" cy="17" r="1.6"/></svg>
+        <span>${esc(CONFIG.ENVIO_TEXTO||'')}</span>
+      </div>
+
+      <div class="combo-total"><span class="k">Total</span><span class="v" id="comboTotalV">${fmt(0)}</span></div>
+      <button class="add-cta" id="addComboBtn" disabled>Elige un tamaño</button>
+    </div>`;
+
+  document.querySelectorAll('#tallas .talla').forEach(t => t.onclick = () => {
+    document.querySelectorAll('#tallas .talla').forEach(x=>x.classList.remove('sel'));
+    t.classList.add('sel');
+    selTier = { ml:t.dataset.ml, precio:+t.dataset.price, antes:+t.dataset.antes||null };
+    refreshComboTotal();
+  });
+  document.querySelectorAll('[data-addcheck]').forEach(ch => ch.onchange = () => {
+    const i=+ch.dataset.addcheck; if(ch.checked) selAddons.add(i); else selAddons.delete(i);
+    refreshComboTotal();
+  });
+  document.querySelectorAll('.gthumb').forEach(t => t.onclick = () => {
+    const m=$('#mainImg'); if(m) m.src=t.dataset.img;
+    document.querySelectorAll('.gthumb').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+  });
+  $('#cqMinus').onclick=()=>{ comboQty=Math.max(1,comboQty-1); $('#cqVal').textContent=comboQty; refreshComboTotal(); };
+  $('#cqPlus').onclick =()=>{ comboQty++; $('#cqVal').textContent=comboQty; refreshComboTotal(); };
+  $('#addComboBtn').onclick = addComboToCart;
+  $('#closeSheet').onclick = closeProduct;
+  // auto-selecciona la talla "más vendido" si existe, si no la primera
+  const best = tallas.findIndex(t=>t.mas_vendido);
+  const pick = document.querySelectorAll('#tallas .talla')[best>=0?best:0];
+  if(pick) pick.click();
+  $('#overlay').classList.add('open'); document.body.style.overflow='hidden';
+}
+function addComboToCart(){
+  if(!curCombo || !selTier) return;
+  const cid='combo_'+curCombo.id;
+  const key=cid+'_'+selTier.ml;
+  const found=CART.find(i=>i.key===key);
+  if(found) found.qty+=comboQty;
+  else CART.push({ key, id:cid, tipo:'combo', nombre:curCombo.nombre, marca:'Combo', categoria:'Promoción', img:imgsOf(curCombo)[0], ml:selTier.ml, precio:selTier.precio, antes:selTier.antes||null, qty:comboQty });
+  (curCombo.addons||[]).forEach((a,i)=>{
+    if(!selAddons.has(i)) return;
+    const akey='addon_'+curCombo.id+'_'+i;
+    const f=CART.find(x=>x.key===akey);
+    if(f) f.qty+=1;
+    else CART.push({ key:akey, id:akey, tipo:'addon', nombre:a.nombre, marca:'Combínalo', img:a.imagen_url||'', ml:a.ml||'', precio:Number(a.precio), antes:Number(a.antes)||null, qty:1 });
+  });
+  saveCart(); toast(`Añadido: ${curCombo.nombre}`);
+  closeProduct(); openCart();
+}
+
 /* ================= Carrito ================= */
 function addToCart(){
   if(!curProduct || !selSize) return;
@@ -593,8 +800,11 @@ async function checkout(R){
 }
 
 /* ================= Buscador ================= */
-$('#q').oninput = e => { query = e.target.value.trim().toLowerCase(); render(); };
+$('#q').oninput = e => { query = e.target.value.trim().toLowerCase(); if(currentView==='promos') renderCombos(); else render(); };
 document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeProduct(); closeCart(); } });
+
+/* ================= Pestañas Catálogo / Promociones ================= */
+document.querySelectorAll('#viewtabs .vtab').forEach(b => b.onclick = () => setView(b.dataset.view));
 
 let toastT; function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2400); }
 

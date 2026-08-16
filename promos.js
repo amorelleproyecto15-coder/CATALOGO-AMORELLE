@@ -74,9 +74,13 @@ function computeCart(cart, prodById, promos) {
   const vig = promosVigentes(promos);
 
   // 1) Precio efectivo por línea (aplica producto/general)
+  //    Los combos y sus add-ons ya traen su propio precio: NO se les aplica ninguna promo.
   const lines = cart.map(it => {
-    const prod = prodById[it.id] || { id: it.id, nombre: it.nombre, categoria: it.categoria };
     const base = Number(it.precio);
+    if (it.tipo === 'combo' || it.tipo === 'addon') {
+      return { ...it, unit: base, unitOrig: Number(it.antes) || base, promo: null, lineTotal: Math.round(base * it.qty * 100) / 100 };
+    }
+    const prod = prodById[it.id] || { id: it.id, nombre: it.nombre, categoria: it.categoria };
     const { precio: unit, promo } = precioUnit(prod, it.ml, base, vig);
     return { ...it, unit, unitOrig: base, promo, lineTotal: Math.round(unit * it.qty * 100) / 100 };
   });
@@ -87,6 +91,7 @@ function computeCart(cart, prodById, promos) {
     const c = pr.config || {};
     const grupos = {};
     lines.forEach(l => {
+      if (l.tipo === 'combo' || l.tipo === 'addon') return;
       const prod = prodById[l.id] || { id: l.id, categoria: l.categoria };
       if (_elegible(c, prod, l.ml)) {
         (grupos[l.ml] ||= []).push(l);
@@ -115,6 +120,7 @@ function computeCart(cart, prodById, promos) {
   vig.filter(p => p.tipo === 'combo').forEach(pr => {
     const c = pr.config || {};
     const elegibles = lines.filter(l => {
+      if (l.tipo === 'combo' || l.tipo === 'addon') return false;
       const prod = prodById[l.id] || { id: l.id };
       return _elegible(c, prod, l.ml);
     });
