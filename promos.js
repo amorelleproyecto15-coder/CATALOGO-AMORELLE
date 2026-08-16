@@ -77,6 +77,9 @@ function computeCart(cart, prodById, promos) {
   //    Los combos y sus add-ons ya traen su propio precio: NO se les aplica ninguna promo.
   const lines = cart.map(it => {
     const base = Number(it.precio);
+    if (it.tipo === 'regalo') {
+      return { ...it, unit: 0, unitOrig: 0, promo: null, lineTotal: 0 };
+    }
     if (it.tipo === 'combo' || it.tipo === 'addon') {
       return { ...it, unit: base, unitOrig: Number(it.antes) || base, promo: null, lineTotal: Math.round(base * it.qty * 100) / 100 };
     }
@@ -91,7 +94,7 @@ function computeCart(cart, prodById, promos) {
     const c = pr.config || {};
     const grupos = {};
     lines.forEach(l => {
-      if (l.tipo === 'combo' || l.tipo === 'addon') return;
+      if (l.tipo === 'combo' || l.tipo === 'addon' || l.tipo === 'regalo') return;
       const prod = prodById[l.id] || { id: l.id, categoria: l.categoria };
       if (_elegible(c, prod, l.ml)) {
         (grupos[l.ml] ||= []).push(l);
@@ -120,7 +123,7 @@ function computeCart(cart, prodById, promos) {
   vig.filter(p => p.tipo === 'combo').forEach(pr => {
     const c = pr.config || {};
     const elegibles = lines.filter(l => {
-      if (l.tipo === 'combo' || l.tipo === 'addon') return false;
+      if (l.tipo === 'combo' || l.tipo === 'addon' || l.tipo === 'regalo') return false;
       const prod = prodById[l.id] || { id: l.id };
       return _elegible(c, prod, l.ml);
     });
@@ -146,6 +149,31 @@ function computeCart(cart, prodById, promos) {
     }
   });
 
+  // 4) Promos de "regalo": llevando N decants, elige un decant de regalo (gratis)
+  const regalos = [];
+  vig.filter(p => p.tipo === 'regalo').forEach(pr => {
+    const c = pr.config || {};
+    const min = Number(c.min) || 0;
+    if (min <= 0) return;
+    let eligibleQty = 0;
+    lines.forEach(l => {
+      if (l.tipo === 'combo' || l.tipo === 'addon' || l.tipo === 'regalo') return;
+      const prod = prodById[l.id] || { id: l.id, categoria: l.categoria };
+      if (_elegible(c, prod, l.ml)) eligibleQty += l.qty;
+    });
+    const giftsEarned = Math.floor(eligibleQty / min);
+    const faltan = eligibleQty === 0 ? min : (eligibleQty % min === 0 ? 0 : min - (eligibleQty % min));
+    const opciones = (c.regalo_productos || []).map(id => {
+      const p = prodById[id];
+      return p ? { id, nombre: p.nombre, img: (Array.isArray(p.imagenes) && p.imagenes[0]) || p.imagen_url || '' } : null;
+    }).filter(Boolean);
+    regalos.push({
+      promoId: pr.id, nombre: pr.nombre, min,
+      ml: c.regalo_ml || '', mls: c.mls || [],
+      eligibleQty, giftsEarned, faltan, opciones
+    });
+  });
+
   const subtotal = Math.round(lines.reduce((s, l) => s + l.lineTotal, 0) * 100) / 100;
   const totalCombo = Math.round(comboDisc.reduce((s, c) => s + c.monto, 0) * 100) / 100;
   const total = Math.max(0, Math.round((subtotal - totalCombo) * 100) / 100);
@@ -154,6 +182,7 @@ function computeCart(cart, prodById, promos) {
   return {
     lines,
     comboDisc,
+    regalos,
     subtotal,
     total,
     totalSinDesc,

@@ -469,6 +469,7 @@ const PROMO_TIPOS = [
   ['producto','🏷️','Descuento a productos','% off a productos/tallas elegidos'],
   ['cantidad','🔢','Precio por cantidad','Llevando N o más, precio fijo o %'],
   ['combo','🎁','Combo / pack','N a elección por un precio total fijo'],
+  ['regalo','🎀','Regalo por compra','Llevando N decants, elige un decant gratis'],
   ['general','🌐','Descuento general','% a todo el catálogo o una categoría'],
 ];
 function tipoLabel(t){ const x=PROMO_TIPOS.find(p=>p[0]===t); return x?x[2]:t; }
@@ -502,6 +503,10 @@ function promoForm(id){
     const cats=CONFIG.CATEGORIAS||[];
     return `<div class="subfield"><label>Categoría (opcional)</label><select id="pf_cat2"><option value="todas" ${(!sel||sel==='todas')?'selected':''}>Todas</option>${cats.map(x=>`<option ${sel===x?'selected':''}>${esc(x)}</option>`).join('')}</select><div class="hint">Ej. solo "Árabe" para una promo de árabes.</div></div>`;
   }
+  function regaloProdsHTML(sel){
+    const s=new Set(sel||[]);
+    return `<div class="chips" id="promoRegalo">${PRODUCTOS.map(pr=>`<button type="button" class="np ${s.has(pr.id)?'sel':''}" data-r="${pr.id}">${esc(pr.nombre)}</button>`).join('')}</div><div class="hint">El cliente podrá elegir su regalo SOLO entre estos perfumes. (Si dejas vacío, no habrá opciones.)</div>`;
+  }
 
   function bodyFor(t){
     if(t==='producto') return `
@@ -526,6 +531,16 @@ function promoForm(id){
         <div class="subfield"><label>¿Cuántos entran?</label><input id="pf_cant" type="number" value="${c.cantidad??''}" placeholder="Ej. 2"></div>
         <div class="subfield"><label>Precio total S/</label><input id="pf_total" type="number" step="0.01" value="${c.precio_total??''}" placeholder="Ej. 30"></div>
       </div>`;
+    if(t==='regalo') return `
+      <div class="subfield"><label>¿Qué decants cuentan para el regalo?</label>${prodPickHTML(c.productos)}</div>
+      ${catPickHTML(c.categoria)}
+      <div class="subfield"><label>Tallas que cuentan</label>${mlPickHTML(c.mls)}</div>
+      <div class="grid2">
+        <div class="subfield"><label>¿Cuántos decants para 1 regalo? (N)</label><input id="pf_gmin" type="number" value="${c.min??''}" placeholder="Ej. 2"></div>
+        <div class="subfield"><label>Talla del regalo</label><input id="pf_gml" value="${esc(c.regalo_ml||'')}" placeholder="Ej. 2"><div class="hint">Ej. 2 = decant de 2ml. Usa "Sellado" si aplica.</div></div>
+      </div>
+      <div class="subfield"><label>Perfumes que el cliente puede elegir como regalo</label>${regaloProdsHTML(c.regalo_productos)}</div>
+      <div class="hint">Ejemplo: "Llevando 2 decants de 5ml, elige 1 decant de 2ml de regalo". Por cada N que lleve, gana 1 regalo.</div>`;
     return `
       <div class="subfield"><label>Alcance</label><select id="pf_alcance"><option value="todo" ${c.alcance==='todo'?'selected':''}>Todo el catálogo</option><option value="categoria" ${c.alcance==='categoria'?'selected':''}>Una categoría</option></select></div>
       <div class="subfield" id="pf_catwrap" style="display:${c.alcance==='categoria'?'block':'none'}"><label>Categoría</label><select id="pf_cat">${(CONFIG.CATEGORIAS||[]).map(x=>`<option ${c.categoria===x?'selected':''}>${esc(x)}</option>`).join('')}</select></div>
@@ -550,6 +565,7 @@ function promoForm(id){
     const bodyEl=$('#promoBody');
     bodyEl.querySelectorAll('#promoProds [data-p]').forEach(b=>b.onclick=()=>b.classList.toggle('sel'));
     bodyEl.querySelectorAll('#promoMls [data-m]').forEach(b=>b.onclick=()=>b.classList.toggle('sel'));
+    bodyEl.querySelectorAll('#promoRegalo [data-r]').forEach(b=>b.onclick=()=>b.classList.toggle('sel'));
     const alc=bodyEl.querySelector('#pf_alcance');
     if(alc) alc.onchange=()=>{ bodyEl.querySelector('#pf_catwrap').style.display=alc.value==='categoria'?'block':'none'; };
   }
@@ -565,6 +581,7 @@ function promoForm(id){
     if(tipo==='producto') return { productos:getChecked('promoProds','p'), categoria:cat2(), mls:getChecked('promoMls','m'), pct:+$('#pf_pct').value||0 };
     if(tipo==='cantidad') return { productos:getChecked('promoProds','p'), categoria:cat2(), mls:getChecked('promoMls','m'), min:+$('#pf_min').value||0, modo:$('#pf_modo').value, valor:+$('#pf_valor').value||0 };
     if(tipo==='combo')    return { productos:getChecked('promoProds','p'), categoria:cat2(), mls:getChecked('promoMls','m'), cantidad:+$('#pf_cant').value||0, precio_total:+$('#pf_total').value||0 };
+    if(tipo==='regalo')   return { productos:getChecked('promoProds','p'), categoria:cat2(), mls:getChecked('promoMls','m'), min:+$('#pf_gmin').value||0, regalo_ml:$('#pf_gml').value.trim(), regalo_productos:getChecked('promoRegalo','r') };
     const alc=$('#pf_alcance').value; return { alcance:alc, categoria:alc==='categoria'?$('#pf_cat').value:null, pct:+$('#pf_pct').value||0 };
   }
 

@@ -251,6 +251,17 @@ header::after{content:""; position:absolute; left:0; right:0; bottom:0; height:1
 .combo-total{display:flex; justify-content:space-between; align-items:baseline; margin-top:16px; padding-top:14px; border-top:1px solid var(--line-soft)}
 .combo-total .k{color:var(--muted)}
 .combo-total .v{font-family:'Cormorant Garamond',serif; font-size:1.5rem; color:var(--gold-1); font-weight:600}
+
+/* ===== Regalo por compra ===== */
+.gift-box{background:rgba(217,180,90,.1); border:1px solid var(--gold-deep); border-radius:12px; padding:12px 14px; margin-top:10px}
+.gift-box .gift-h{color:var(--gold-1); font-size:.9rem; font-weight:600; margin-bottom:9px}
+.gift-row{display:flex; gap:8px}
+.gift-row select{flex:1; min-width:0; background:var(--panel); border:1px solid var(--gold-deep); color:var(--cream); border-radius:9px; padding:9px 11px; font-size:.86rem; outline:none}
+.gift-row button{flex:0 0 auto; background:var(--gold-grad); color:var(--bg); font-weight:600; border-radius:9px; padding:9px 16px; font-size:.85rem}
+.ci.gift{border-color:var(--gold-deep); background:rgba(217,180,90,.07)}
+.ci.gift .th{font-size:1.3rem}
+.gift-tag{font-size:.66rem; color:var(--bg); background:var(--gold-grad); border-radius:999px; padding:2px 8px; font-weight:700; margin-left:4px; letter-spacing:.04em}
+.ci.gift .m{color:var(--gold-2)}
 </style>
 </head>
 <body>
@@ -368,6 +379,7 @@ const ICONS = {
 /* ================= Estado ================= */
 let PRODUCTS=[], NOTAS_BY_PROD={}, PROMOS=[], PROD_BY_ID={};
 let COMBOS=[], currentView='catalogo';
+let GIFT_STATUS=[];
 let filterCat='Todos', filterGen='Todos', query='';
 let CART = JSON.parse(localStorage.getItem('cart_'+CONFIG.TIENDA_NOMBRE) || '[]');
 let payMethod='coordinar';
@@ -713,10 +725,31 @@ function addToCart(){
   const found = CART.find(i=>i.key===key);
   if(found) found.qty++;
   else CART.push({ key, id:curProduct.id, nombre:curProduct.nombre, marca:curProduct.marca, categoria:curProduct.categoria, img:imgsOf(curProduct)[0], ml:selSize.size, precio:selSize.price, qty:1 });
-  saveCart(); toast(`Añadido: ${curProduct.nombre} (${mlLabel(selSize.size)})`);
+  saveCart();
+  if(regaloDisponible()) toast('🎁 ¡Ganaste un regalo! Elígelo en tu pedido');
+  else toast(`Añadido: ${curProduct.nombre} (${mlLabel(selSize.size)})`);
   closeProduct(); openCart();
 }
 function saveCart(){ localStorage.setItem('cart_'+CONFIG.TIENDA_NOMBRE, JSON.stringify(CART)); renderCart(); }
+
+/* Agregar un decant de regalo elegido por el cliente */
+function addGift(promoId){
+  const g = GIFT_STATUS.find(x=>x.promoId===promoId); if(!g) return;
+  const chosen = CART.filter(i=>i.tipo==='regalo'&&i.promoId===promoId).length;
+  if(chosen>=g.giftsEarned){ toast('Ya elegiste todos tus regalos'); return; }
+  const sel=document.getElementById('giftSel_'+promoId);
+  const pid = sel ? sel.value : (g.opciones[0]&&g.opciones[0].id);
+  const opt = g.opciones.find(o=>o.id===pid); if(!opt){ toast('Elige un perfume'); return; }
+  CART.push({ key:'regalo_'+promoId+'_'+pid+'_'+Date.now(), id:'regalo_'+pid, tipo:'regalo', promoId, nombre:opt.nombre, marca:'Regalo', img:opt.img||'', ml:g.ml, precio:0, qty:1 });
+  saveCart(); toast('🎁 ¡Regalo agregado: '+opt.nombre+'!');
+}
+/* ¿Hay un regalo recién disponible para elegir? */
+function regaloDisponible(){
+  return (GIFT_STATUS||[]).some(g=>{
+    const chosen = CART.filter(i=>i.tipo==='regalo'&&i.promoId===g.promoId).length;
+    return g.giftsEarned>chosen && g.opciones.length;
+  });
+}
 
 function renderCart(){
   const n = CART.reduce((s,i)=>s+i.qty,0);
@@ -724,13 +757,35 @@ function renderCart(){
 
   if(!CART.length){
     $('#cartList').innerHTML = `<div class="cart-empty"><b style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--cream)">Tu pedido está vacío</b><br>Añade tus fragancias favoritas.</div>`;
-    $('#cartBot').style.display='none'; return;
+    $('#cartBot').style.display='none'; GIFT_STATUS=[]; return;
   }
 
-  const R = window.PROMOS_ENGINE.computeCart(CART, PROD_BY_ID, PROMOS);
+  let R = window.PROMOS_ENGINE.computeCart(CART, PROD_BY_ID, PROMOS);
+  // Reconciliar regalos: nunca más regalos de los ganados (si bajan los requisitos, se quitan)
+  let giftChanged=false;
+  (R.regalos||[]).forEach(g=>{
+    const gifts = CART.filter(i=>i.tipo==='regalo'&&i.promoId===g.promoId);
+    if(gifts.length > g.giftsEarned){
+      const sobra = new Set(gifts.slice(g.giftsEarned));
+      CART = CART.filter(i=>!sobra.has(i));
+      giftChanged=true;
+    }
+  });
+  if(giftChanged){ localStorage.setItem('cart_'+CONFIG.TIENDA_NOMBRE, JSON.stringify(CART)); R = window.PROMOS_ENGINE.computeCart(CART, PROD_BY_ID, PROMOS); }
+  GIFT_STATUS = R.regalos || [];
 
-  $('#cartList').innerHTML = R.lines.map(i => `
-    <div class="ci">
+  const itemsHtml = R.lines.map(i => {
+    if(i.tipo==='regalo'){
+      return `<div class="ci gift">
+        <div class="th">${i.img?`<img src="${esc(i.img)}" alt="">`:'🎁'}</div>
+        <div class="info">
+          <div class="n">${esc(i.nombre)} <span class="gift-tag">Regalo</span></div>
+          <div class="m">${i.ml?esc(mlLabel(i.ml)):''} · GRATIS</div>
+        </div>
+        <button class="rm" data-rm="${i.key}">Quitar</button>
+      </div>`;
+    }
+    return `<div class="ci">
       <div class="th">${i.img?`<img src="${esc(i.img)}" alt="">`:''}</div>
       <div class="info">
         <div class="n">${esc(i.nombre)}</div>
@@ -739,13 +794,36 @@ function renderCart(){
         <div class="qty"><button data-dec="${i.key}">−</button><span>${i.qty}</span><button data-inc="${i.key}">+</button></div>
       </div>
       <button class="rm" data-rm="${i.key}">Quitar</button>
-    </div>`).join('')
+    </div>`;
+  }).join('');
+
+  const giftHtml = (R.regalos||[]).map(g=>{
+    const chosen = CART.filter(i=>i.tipo==='regalo'&&i.promoId===g.promoId).length;
+    if(g.giftsEarned>chosen && g.opciones.length){
+      const porElegir=g.giftsEarned-chosen;
+      return `<div class="gift-box">
+        <div class="gift-h">🎁 ¡Tienes ${porElegir} regalo${porElegir>1?'s':''} por elegir!</div>
+        <div class="gift-row">
+          <select id="giftSel_${g.promoId}">${g.opciones.map(o=>`<option value="${esc(o.id)}">${esc(o.nombre)}${g.ml?` — ${esc(mlLabel(g.ml))}`:''}</option>`).join('')}</select>
+          <button data-giftadd="${g.promoId}">Agregar</button>
+        </div>
+      </div>`;
+    }
+    if(g.giftsEarned===0 && g.eligibleQty>0 && g.faltan>0){
+      const sizeTxt = (g.mls&&g.mls.length)? ' de '+g.mls.map(mlLabel).join('/') : '';
+      return `<div class="upsell">🎁 Te falta${g.faltan>1?'n':''} ${g.faltan} decant${g.faltan>1?'s':''}${sizeTxt} para llevarte un regalo: <b>${esc(g.nombre)}</b></div>`;
+    }
+    return '';
+  }).join('');
+
+  $('#cartList').innerHTML = itemsHtml + giftHtml
     + (R.upsells.length ? R.upsells.map(u=>`<div class="upsell">🌟 ${esc(u)}</div>`).join('') : '')
     + (R.comboDisc.length ? R.comboDisc.map(c=>`<div class="promo-line">🎁 ${esc(c.nombre)}: −${fmt(c.monto)}</div>`).join('') : '');
 
   $('#cartList').querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>chgQty(b.dataset.inc,1));
   $('#cartList').querySelectorAll('[data-dec]').forEach(b=>b.onclick=()=>chgQty(b.dataset.dec,-1));
   $('#cartList').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{CART=CART.filter(i=>i.key!==b.dataset.rm); saveCart();});
+  $('#cartList').querySelectorAll('[data-giftadd]').forEach(b=>b.onclick=()=>addGift(b.dataset.giftadd));
 
   const yapeOn = payMethod==='yape' && CONFIG.YAPE_NUMERO;
   $('#cartBot').style.display='block';
@@ -798,7 +876,10 @@ async function checkout(R){
 
   // Armar mensaje de WhatsApp
   let msg = `¡Hola ${enc(CONFIG.TIENDA_NOMBRE)}! Quiero hacer este pedido:%0A%0A`;
-  R.lines.forEach(i => msg += `• ${enc(i.nombre)} (${enc(i.marca||'')}) — ${enc(mlLabel(i.ml))} x${i.qty} = ${enc(fmt(i.unit*i.qty))}%0A`);
+  R.lines.forEach(i => {
+    if(i.tipo==='regalo') msg += `• 🎁 ${enc(i.nombre)} — ${enc(mlLabel(i.ml))} x${i.qty} = GRATIS%0A`;
+    else msg += `• ${enc(i.nombre)} (${enc(i.marca||'')}) — ${enc(mlLabel(i.ml))} x${i.qty} = ${enc(fmt(i.unit*i.qty))}%0A`;
+  });
   if(R.ahorro>0) msg += `%0A🎉 Ahorro: ${enc(fmt(R.ahorro))}`;
   msg += `%0A*Total: ${enc(fmt(R.total))}*`;
   if(nombre||tel||dir){
