@@ -588,7 +588,13 @@ function promoForm(id){
   $('#cancelPromo').onclick=closeOv;
   $('#savePromo').onclick = async () => {
     const nombre=$('#prNombre').value.trim(); if(!nombre){ toast('Ponle nombre',true); return; }
-    const payload={ nombre, tipo, config:buildConfig(), desde:$('#prDesde').value||null, hasta:$('#prHasta').value||null, activo:$('#prActivo').checked };
+    const config=buildConfig();
+    if(tipo==='regalo'){
+      if(!(config.min>0)){ toast('Indica cuántos decants se necesitan (N)',true); return; }
+      if(!config.regalo_ml){ toast('Indica la talla del regalo (ej. 2)',true); return; }
+      if(!config.regalo_productos.length){ toast('Marca al menos un perfume que el cliente pueda elegir de regalo',true); return; }
+    }
+    const payload={ nombre, tipo, config, desde:$('#prDesde').value||null, hasta:$('#prHasta').value||null, activo:$('#prActivo').checked };
     const {error}= id ? await sb.from('promociones').update(payload).eq('id',id) : await sb.from('promociones').insert(payload);
     if(error){ toast('Error: '+error.message,true); return; }
     toast('Guardado ✓'); closeOv(); loadPromos();

@@ -436,6 +436,26 @@ async function load(){
 
   renderFilters(); render(); renderCombos();
   const vt=$('#viewtabs'); if(vt) vt.style.display = COMBOS.length ? 'flex' : 'none';
+
+  // Modo diagnóstico: abre el catálogo con  ?debug  al final de la URL
+  if(/[?&]debug/i.test(location.search)){
+    const reg = PROMOS.filter(p=>p.tipo==='regalo');
+    let msg = 'DIAGNÓSTICO Aromelle\n\n'
+      + '✓ Versión NUEVA cargada (con regalos y combos)\n'
+      + 'Promociones cargadas: '+PROMOS.length+'\n'
+      + 'Promos de tipo regalo: '+reg.length+'\n'
+      + 'Combos: '+COMBOS.length+'\n';
+    reg.forEach((p,i)=>{ const c=p.config||{};
+      msg += '\nRegalo #'+(i+1)+': "'+p.nombre+'"'
+        + '\n  activa: '+(p.activo?'sí':'NO')
+        + '\n  N (min): '+(c.min||'—')
+        + '\n  tallas que cuentan: '+((c.mls&&c.mls.length)?c.mls.join(', '):'todas')
+        + '\n  talla del regalo: '+(c.regalo_ml||'—')
+        + '\n  perfumes de regalo: '+((c.regalo_productos&&c.regalo_productos.length)||0);
+    });
+    if(!reg.length) msg += '\n⚠ No hay ninguna promo de tipo "regalo" cargada.';
+    alert(msg);
+  }
 }
 
 /* ================= Combos / Promociones ================= */
@@ -799,17 +819,20 @@ function renderCart(){
 
   const giftHtml = (R.regalos||[]).map(g=>{
     const chosen = CART.filter(i=>i.tipo==='regalo'&&i.promoId===g.promoId).length;
-    if(g.giftsEarned>chosen && g.opciones.length){
+    if(g.giftsEarned>chosen){
       const porElegir=g.giftsEarned-chosen;
-      return `<div class="gift-box">
-        <div class="gift-h">🎁 ¡Tienes ${porElegir} regalo${porElegir>1?'s':''} por elegir!</div>
-        <div class="gift-row">
-          <select id="giftSel_${g.promoId}">${g.opciones.map(o=>`<option value="${esc(o.id)}">${esc(o.nombre)}${g.ml?` — ${esc(mlLabel(g.ml))}`:''}</option>`).join('')}</select>
-          <button data-giftadd="${g.promoId}">Agregar</button>
-        </div>
-      </div>`;
+      if(g.opciones.length){
+        return `<div class="gift-box">
+          <div class="gift-h">🎁 ¡Tienes ${porElegir} regalo${porElegir>1?'s':''} por elegir!</div>
+          <div class="gift-row">
+            <select id="giftSel_${g.promoId}">${g.opciones.map(o=>`<option value="${esc(o.id)}">${esc(o.nombre)}${g.ml?` — ${esc(mlLabel(g.ml))}`:''}</option>`).join('')}</select>
+            <button data-giftadd="${g.promoId}">Agregar</button>
+          </div>
+        </div>`;
+      }
+      return `<div class="upsell">🎁 ¡Ganaste ${porElegir} regalo${porElegir>1?'s':''}! Pero aún no hay perfumes de regalo configurados. (Admin: marca los perfumes de regalo y que estén visibles.)</div>`;
     }
-    if(g.giftsEarned===0 && g.eligibleQty>0 && g.faltan>0){
+    if(g.giftsEarned===0 && g.faltan>0){
       const sizeTxt = (g.mls&&g.mls.length)? ' de '+g.mls.map(mlLabel).join('/') : '';
       return `<div class="upsell">🎁 Te falta${g.faltan>1?'n':''} ${g.faltan} decant${g.faltan>1?'s':''}${sizeTxt} para llevarte un regalo: <b>${esc(g.nombre)}</b></div>`;
     }
