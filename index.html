@@ -85,6 +85,7 @@ header::after{content:""; position:absolute; left:0; right:0; bottom:0; height:1
 .hero-ornament::before{content:""; position:absolute; inset:16px; border-radius:50%; border:1px solid var(--gold-deep); opacity:.4}
 .hero-ornament::after{content:""; position:absolute; inset:30px; border-radius:50%; border:1px solid var(--line-soft)}
 .hero-ornament .mono{font-family:'Cinzel',serif; font-size:clamp(2.4rem,7vw,3.6rem); letter-spacing:.08em}
+.hero-ornament img{width:66%; height:auto; max-height:70%; object-fit:contain; filter:drop-shadow(0 10px 22px rgba(0,0,0,.55))}
 .divider{max-width:1200px; margin:6px auto 2px; padding:0 20px; display:flex; align-items:center; gap:16px; color:var(--gold-3); font-size:.62rem}
 .divider span{flex:1; height:1px; background:linear-gradient(90deg,transparent,var(--line),transparent)}
 @media(max-width:760px){ .hero{grid-template-columns:1fr; text-align:center; padding-top:38px; gap:22px} .hero-copy{text-align:center} .eyebrow{justify-content:center} .hero p{margin:0 auto} .hero-ornament{width:min(200px,58vw)} }
@@ -335,11 +336,21 @@ const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;',
 })();
 
 /* Branding desde config */
-$('#brand').innerHTML = CONFIG.LOGO_URL ? `<img src="${CONFIG.LOGO_URL}" alt="${esc(CONFIG.TIENDA_NOMBRE)}">` : `<span class="word gold-text">${esc(CONFIG.TIENDA_NOMBRE)}</span>`;
+$('#brand').innerHTML = CONFIG.LOGO_URL ? `<img src="${CONFIG.LOGO_URL}" alt="${esc(CONFIG.TIENDA_NOMBRE)}" onerror="this.outerHTML='&lt;span class=\\'word gold-text\\'&gt;${esc(CONFIG.TIENDA_NOMBRE)}&lt;/span&gt;'">` : `<span class="word gold-text">${esc(CONFIG.TIENDA_NOMBRE)}</span>`;
 $('#tagline').textContent = CONFIG.TIENDA_TAGLINE || '';
 $('#heroTitle').textContent = CONFIG.TIENDA_NOMBRE;
 if(CONFIG.HERO_SUB) $('#heroSub').textContent = CONFIG.HERO_SUB;
-(function(){ const orn=$('#heroOrn'); if(!orn) return; const w=(CONFIG.TIENDA_NOMBRE||'').trim().split(/\s+/).filter(Boolean); let m=w.length?(w[0].length<=4?w[0]:w.map(x=>x[0]).join('')):'?'; orn.innerHTML='<div class="mono gold-text">'+esc(m.toUpperCase().slice(0,4))+'</div>'; })();
+(function(){ const orn=$('#heroOrn'); if(!orn) return;
+  const w=(CONFIG.TIENDA_NOMBRE||'').trim().split(/\s+/).filter(Boolean);
+  let m=w.length?(w[0].length<=4?w[0]:w.map(x=>x[0]).join('')):'?';
+  const mono='<div class="mono gold-text">'+esc(m.toUpperCase().slice(0,4))+'</div>';
+  if(CONFIG.LOGO_URL){
+    orn.innerHTML='<img alt="'+esc(CONFIG.TIENDA_NOMBRE||'')+'">';
+    const im=orn.querySelector('img');
+    im.onerror=function(){ orn.innerHTML=mono; };
+    im.src=CONFIG.LOGO_URL;
+  } else { orn.innerHTML=mono; }
+})();
 document.title = CONFIG.TIENDA_NOMBRE + ' — Catálogo';
 
 /* Redes sociales */
